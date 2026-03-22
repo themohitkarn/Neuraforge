@@ -332,7 +332,7 @@ class TemplateGenerator:
     def __init__(self, model_path="template_generator_model.pth", dataset_path="html_dataset.json"):
         import torch
         from tokenizer import TemplateTokenizer
-        from model_architecture import TemplateGeneratorModel
+        from ml.model_architecture import TemplateGeneratorModel
         
         self.tokenizer = TemplateTokenizer()
         self.tokenizer.fit_on_dataset(dataset_path)

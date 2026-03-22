@@ -8,8 +8,9 @@ from database.models.project_file import ProjectFile
 from modules.auth.token_service import TokenService
 
 import io
+import mimetypes
 import zipfile
-from flask import send_file
+from flask import Response, send_file
 
 website_bp = Blueprint("website_bp", __name__)
 
@@ -30,6 +31,21 @@ def _find_project_file_by_path(website_id, path):
 # ============================================================
 # VIEW ROUTES (Public Preview)
 # ============================================================
+
+@website_bp.route("/asset/<int:website_id>/<path:file_path>")
+def website_asset(website_id, file_path):
+    """
+    Serve generated project files during preview for relative links
+    such as assets/logo.svg or styles/site.css.
+    """
+    website = Website.query.get_or_404(website_id)
+    file_obj = ProjectFile.query.filter_by(website_id=website.id, path=file_path).first()
+    if not file_obj:
+        abort(404, "Asset file not found.")
+
+    mimetype, _ = mimetypes.guess_type(file_path)
+    return Response(file_obj.content, mimetype=mimetype or "text/plain")
+
 
 @website_bp.route("/view/<int:website_id>")
 def view_website(website_id):
