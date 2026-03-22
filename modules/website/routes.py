@@ -4,6 +4,7 @@ from database import db
 from database.models.website import Website
 from database.models.page import Page
 from database.models.section import Section
+from database.models.project_file import ProjectFile
 from modules.auth.token_service import TokenService
 
 import io
@@ -11,6 +12,19 @@ import zipfile
 from flask import send_file
 
 website_bp = Blueprint("website_bp", __name__)
+
+
+def _project_file_payload(file_obj):
+    return {
+        "id": file_obj.id,
+        "path": file_obj.path,
+        "content": file_obj.content,
+        "file_type": file_obj.file_type,
+    }
+
+
+def _find_project_file_by_path(website_id, path):
+    return ProjectFile.query.filter_by(website_id=website_id, path=path).first()
 
 
 # ============================================================
@@ -368,11 +382,18 @@ def add_project_file(website_id):
     if website.user_id != session["user_id"]:
         return jsonify({"error": "Forbidden"}), 403
 
-    from database.models.project_file import ProjectFile
-
-    data = request.get_json() or {}
-    path = data.get("path", "new_file.txt")
+    data = request.get_json(silent=True) or {}
+    path = (data.get("path") or "").strip()
     content = data.get("content", "")
+    if not path:
+        return jsonify({"error": "File path is required"}), 400
+
+    existing = _find_project_file_by_path(website.id, path)
+    if existing:
+        return jsonify({
+            "error": "A file with that path already exists",
+            "file": _project_file_payload(existing),
+        }), 409
     
     # Determine basic file_type from extension
     ext = path.split('.')[-1].lower() if '.' in path else 'text'
@@ -386,31 +407,22 @@ def add_project_file(website_id):
     db.session.add(new_file)
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "file": {
-            "id": new_file.id,
-            "path": new_file.path,
-            "content": new_file.content,
-            "file_type": new_file.file_type
-        }
-    })
+    return jsonify({"success": True, "file": _project_file_payload(new_file)})
 
 @website_bp.route("/api/file/<int:file_id>", methods=["PUT"])
 def update_project_file(file_id):
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    from database.models.project_file import ProjectFile
     file_obj = ProjectFile.query.get_or_404(file_id)
     if file_obj.website.user_id != session["user_id"]:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     if "content" in data:
         file_obj.content = data["content"]
     db.session.commit()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "file": _project_file_payload(file_obj)})
 
 
 @website_bp.route("/api/file/<int:file_id>/rename", methods=["PUT"])
@@ -418,19 +430,18 @@ def rename_project_file(file_id):
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    from database.models.project_file import ProjectFile
     file_obj = ProjectFile.query.get_or_404(file_id)
     if file_obj.website.user_id != session["user_id"]:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     if "path" in data:
         file_obj.path = data["path"]
         # Update file_type based on new extension
         file_obj.file_type = file_obj.path.split('.')[-1].lower() if '.' in file_obj.path else 'text'
         
     db.session.commit()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "file": _project_file_payload(file_obj)})
 
 
 @website_bp.route("/api/file/<int:file_id>", methods=["DELETE"])
@@ -438,14 +449,63 @@ def delete_project_file(file_id):
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    from database.models.project_file import ProjectFile
     file_obj = ProjectFile.query.get_or_404(file_id)
     if file_obj.website.user_id != session["user_id"]:
         return jsonify({"error": "Forbidden"}), 403
 
+    deleted_file_id = file_obj.id
     db.session.delete(file_obj)
     db.session.commit()
-    return jsonify({"success": True, "message": "File deleted"})
+    return jsonify({"success": True, "message": "File deleted", "deleted_file_id": deleted_file_id})
+
+
+@website_bp.route("/api/website/<int:website_id>/file", methods=["POST", "PUT", "DELETE"])
+def legacy_project_file_endpoint(website_id):
+    """
+    Backward-compatible endpoint used by older IDE clients.
+    Accepts path-based operations and maps them to canonical project-file behavior.
+    """
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    website = Website.query.get_or_404(website_id)
+    if website.user_id != session["user_id"]:
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.get_json(silent=True) or {}
+    path = (data.get("path") or "").strip()
+    if not path:
+        return jsonify({"error": "File path is required"}), 400
+
+    file_obj = _find_project_file_by_path(website.id, path)
+
+    if request.method == "POST":
+        if file_obj:
+            return jsonify({"success": True, "file": _project_file_payload(file_obj)})
+
+        content = data.get("content", "")
+        ext = path.split('.')[-1].lower() if '.' in path else 'text'
+        file_obj = ProjectFile(website_id=website.id, path=path, content=content, file_type=ext)
+        db.session.add(file_obj)
+        db.session.commit()
+        return jsonify({"success": True, "file": _project_file_payload(file_obj)})
+
+    if not file_obj:
+        return jsonify({"error": "File not found"}), 404
+
+    if request.method == "PUT":
+        if "content" in data:
+            file_obj.content = data["content"]
+        if "new_path" in data and data["new_path"]:
+            file_obj.path = data["new_path"]
+            file_obj.file_type = file_obj.path.split('.')[-1].lower() if '.' in file_obj.path else 'text'
+        db.session.commit()
+        return jsonify({"success": True, "file": _project_file_payload(file_obj)})
+
+    deleted_file_id = file_obj.id
+    db.session.delete(file_obj)
+    db.session.commit()
+    return jsonify({"success": True, "message": "File deleted", "deleted_file_id": deleted_file_id})
 
 # ============================================================
 # EXPORT
@@ -576,7 +636,7 @@ def create_snapshot(section_id):
         return jsonify({"error": "Forbidden"}), 403
 
     from database.models.snapshot import SectionSnapshot
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     new_snapshot = SectionSnapshot(
         section_id=section_id,
         content=data.get('content', section.content)

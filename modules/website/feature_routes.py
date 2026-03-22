@@ -202,23 +202,6 @@ Output ONLY valid JSON."""},
 # VERSION HISTORY — Snapshots for undo/redo
 # ============================================================
 
-@features_bp.route("/api/section/<int:section_id>/snapshot", methods=["POST"])
-def save_snapshot(section_id):
-    """Save a snapshot of current section content before editing."""
-    if "user_id" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    section = Section.query.get_or_404(section_id)
-    if section.page.website.user_id != session["user_id"]:
-        return jsonify({"error": "Forbidden"}), 403
-
-    snapshot = SectionSnapshot(section_id=section_id, content=section.content)
-    db.session.add(snapshot)
-    db.session.commit()
-
-    return jsonify({"success": True, "snapshot_id": snapshot.id})
-
-
 @features_bp.route("/api/section/<int:section_id>/history")
 def get_history(section_id):
     """Get version history for a section."""

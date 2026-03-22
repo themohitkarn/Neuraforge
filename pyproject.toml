@@ -10,3 +10,8 @@ requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+norecursedirs = ["pytest-cache-files-*", ".git", "node_modules", "legacy_artifacts", "__pycache__"]

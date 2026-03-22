@@ -37,10 +37,15 @@ desktop.ini
 
 # Logs
 *.log
+pytest-cache-files-*/
+.pytest_cache/
 
 # Docker
 tmp/
 rollback/
+
+# Local archives
+legacy_artifacts/
 
 # Model weights
 *.pth

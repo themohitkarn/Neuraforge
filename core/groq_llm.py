@@ -3,7 +3,7 @@
 
 import os
 import logging
-from groq import Groq
+from groq import Groq # type: ignore
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,7 +16,7 @@ class GroqLLM:
     Used by chatbots and any component needing fast LLM inference.
     """
 
-    def __init__(self, model: str = "llama-3.1-8b-instant"):
+    def __init__(self, model: str = "llama-3.1-8b-versatile"):
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise ValueError("GROQ_API_KEY is not set in the .env file.")
