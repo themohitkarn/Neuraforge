@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
 from tokenizer import TemplateTokenizer
-from model_architecture import TemplateGeneratorModel
+from ml.model_architecture import TemplateGeneratorModel
 
 # Enable cudnn auto-tuner
 torch.backends.cudnn.benchmark = True
