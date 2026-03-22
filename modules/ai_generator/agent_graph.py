@@ -176,7 +176,6 @@ class GroqWebsiteGenerationGraph:
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise RuntimeError("GROQ_API_KEY is not set.")
-
         try:
             from langchain_groq import ChatGroq
         except ModuleNotFoundError as exc:
@@ -226,6 +225,7 @@ class GroqWebsiteGenerationGraph:
         design_spec: Any = None,
         layout_spec: Any = None,
     ) -> tuple[Optional[dict[str, Any]], Optional[str], dict[str, Any]]:
+        
         initial_state: GenerationState = {
             "raw_prompt": raw_prompt,
             "framework": framework,
@@ -248,6 +248,7 @@ class GroqWebsiteGenerationGraph:
 
         final_output = result_state.get("final_output")
         error = result_state.get("error")
+        
         debug_info = {
             "review_data": result_state.get("review_data"),
             "reviewed_prompt": result_state.get("reviewed_prompt"),
