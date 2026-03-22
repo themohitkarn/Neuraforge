@@ -67,7 +67,21 @@ def run_agent():
             "files_modified": files_modified,
             "logs": full_logs
         }), 200
-        
+
+    except ModuleNotFoundError as e:
+        missing = getattr(e, "name", None) or str(e)
+        return jsonify({
+            "status": "unavailable",
+            "message": (
+                "AI Agent is unavailable because optional dependencies are missing. "
+                "Install requirements and restart the app."
+            ),
+            "missing_dependency": missing,
+            "logs": [
+                "AI Agent feature requires optional ML/indexing packages.",
+                f"Missing dependency: {missing}",
+            ],
+        }), 503
     except Exception as e:
         import traceback
         return jsonify({

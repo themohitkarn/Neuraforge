@@ -8,10 +8,21 @@ class WebsiteChatbot:
     """AI chatbot that helps users with website code — gives code snippets and advice only."""
 
     def __init__(self, website_context: dict = None):
-        self.llm = GroqLLM(model="llama-3.1-8b-instant")
+        self.llm = None
+        self._init_error = None
+        try:
+            self.llm = GroqLLM(model="llama-3.1-8b-instant")
+        except Exception as e:
+            self._init_error = str(e)
         self.context = website_context or {}
 
     def get_response(self, user_message: str) -> str:
+        if self.llm is None:
+            return (
+                '{"message":"AI chat is unavailable right now. Configure GROQ_API_KEY and try again.",'
+                '"action":{"type":"none","code":""}}'
+            )
+
         context_info = ""
         if self.context:
             context_info = f"\nThe user is working on a website called '{self.context.get('name', 'Unknown')}' with {self.context.get('page_count', 0)} pages."

@@ -1,5 +1,4 @@
 import random
-import re
 
 class LayoutSpec:
     def __init__(self, page_count: int, pages_blueprint: list, layout_variation: str):
@@ -17,7 +16,7 @@ class LayoutSpec:
     def to_prompt_string(self):
         pages_str = ""
         for p in self.pages_blueprint:
-            sections_str = " → ".join(p["sections"])
+            sections_str = " -> ".join(p["sections"])
             pages_str += f"\n  Page '{p['page_name']}' (/{p['page_slug']}): {sections_str}"
         
         return f"""LAYOUT SPECIFICATION (You MUST follow this):
@@ -122,6 +121,3 @@ class LayoutGenerator:
         
         return LayoutSpec(page_count, pages_blueprint, layout_variation)
 
-layout_generator = LayoutGenerator()
-layout_spec = layout_generator.generate_layout(5)
-print(layout_spec.to_prompt_string())

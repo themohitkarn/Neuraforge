@@ -973,6 +973,80 @@ function setDirty(val) {
 }
 
 /* ============================================================
+   PROJECT FILE API HELPERS
+============================================================ */
+async function parseApiResponse(response) {
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (e) {
+        data = {};
+    }
+    if (!response.ok || data.error) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+    }
+    return data;
+}
+
+async function createProjectFileOnServer(path, content) {
+    try {
+        const res = await fetch(`/website/api/file/${WEBSITE_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path, content }),
+        });
+        return await parseApiResponse(res);
+    } catch (e) {
+        const fallback = await fetch(`/website/api/website/${WEBSITE_ID}/file`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path, content }),
+        });
+        return await parseApiResponse(fallback);
+    }
+}
+
+async function saveProjectFileOnServer(file, content) {
+    if (file?.id) {
+        try {
+            const res = await fetch(`/website/api/file/${file.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+            });
+            return await parseApiResponse(res);
+        } catch (e) {
+            // Continue to path-based legacy fallback
+        }
+    }
+
+    const fallback = await fetch(`/website/api/website/${WEBSITE_ID}/file`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: file.path, content }),
+    });
+    return await parseApiResponse(fallback);
+}
+
+async function deleteProjectFileOnServer(file) {
+    if (file?.id) {
+        try {
+            const res = await fetch(`/website/api/file/${file.id}`, { method: 'DELETE' });
+            return await parseApiResponse(res);
+        } catch (e) {
+            // Continue to path-based legacy fallback
+        }
+    }
+
+    const fallback = await fetch(`/website/api/website/${WEBSITE_ID}/file`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: file.path }),
+    });
+    return await parseApiResponse(fallback);
+}
+
+/* ============================================================
    LOAD DATA
 ============================================================ */
 async function loadWebsiteData() {
@@ -1141,9 +1215,15 @@ function renderFileTree() {
                 <i class="${icon}" style="color:${color};"></i>
                 <span class="file-name" title="${escHtml(file.path)}">${escHtml(file.path)}</span>
                 <div class="file-actions">
-                    <button onclick="event.stopPropagation();deleteProjectFile('${escHtml(file.path)}')"
-                            title="Delete"><i class="fas fa-trash"></i></button>
+                    <button class="delete-project-file-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>`;
+            const deleteBtn = item.querySelector('.delete-project-file-btn');
+            deleteBtn?.addEventListener('click', event => {
+                event.stopPropagation();
+                deleteProjectFile(file.id, file.path);
+            });
             item.onclick = () => openProjectFile(file.path);
             tree.appendChild(item);
         });
@@ -1184,38 +1264,45 @@ async function createNewFile() {
     if (!siteData.project_files) siteData.project_files = [];
     if (siteData.project_files.find(f => f.path === name)) return toast('File already exists', 'error');
 
-    const newFile = { path: name, content: getFileTemplate(name) };
-    siteData.project_files.push(newFile);
-    renderFileTree();
-    openProjectFile(name);
-    closeModal('newFileModal');
-    toast(`${name} created!`, 'success');
-
-    // Persist
-    fetch(`/website/api/website/${WEBSITE_ID}/file`, {
-        method  : 'POST',
-        headers : { 'Content-Type': 'application/json' },
-        body    : JSON.stringify({ path: name, content: newFile.content }),
-    }).catch(() => {});
+    const initialContent = getFileTemplate(name);
+    try {
+        const data = await createProjectFileOnServer(name, initialContent);
+        const createdFile = data.file || { id: null, path: name, content: initialContent };
+        siteData.project_files.push(createdFile);
+        renderFileTree();
+        openProjectFile(createdFile.path);
+        closeModal('newFileModal');
+        toast(`${name} created!`, 'success');
+    } catch (e) {
+        toast('Failed to create file: ' + e.message, 'error');
+    }
 }
 
-async function deleteProjectFile(filePath) {
+async function deleteProjectFile(fileId, filePath) {
     if (!confirm(`Delete "${filePath}"?`)) return;
-    siteData.project_files = (siteData.project_files || []).filter(f => f.path !== filePath);
-    if (activeFile?.path === filePath) {
+
+    const file = (siteData.project_files || []).find(f =>
+        (fileId && f.id === fileId) || f.path === filePath
+    );
+    if (!file) return toast('File not found', 'error');
+
+    try {
+        await deleteProjectFileOnServer(file);
+    } catch (e) {
+        return toast('Delete failed: ' + e.message, 'error');
+    }
+
+    siteData.project_files = (siteData.project_files || []).filter(f => f !== file);
+    if (activeFile?.path === file.path) {
         activeFile = null;
         editor.setValue('<!-- File deleted -->');
         document.getElementById('editor-tab-name').textContent = 'Select a section';
     }
+
     cssCache = null;
     renderFileTree();
     schedulePreviewUpdate();
-    toast(`${filePath} deleted`, 'success');
-    fetch(`/website/api/website/${WEBSITE_ID}/file`, {
-        method  : 'DELETE',
-        headers : { 'Content-Type': 'application/json' },
-        body    : JSON.stringify({ path: filePath }),
-    }).catch(() => {});
+    toast(`${file.path} deleted`, 'success');
 }
 
 function getFileTemplate(filename) {
@@ -1514,11 +1601,10 @@ async function saveCurrentFile() {
     cssCache = null;
 
     try {
-        await fetch(`/website/api/website/${WEBSITE_ID}/file`, {
-            method  : 'PUT',
-            headers : { 'Content-Type': 'application/json' },
-            body    : JSON.stringify({ path: activeFile.path, content }),
-        });
+        const data = await saveProjectFileOnServer(activeFile, content);
+        if (data.file?.id) {
+            activeFile.id = data.file.id;
+        }
         setDirty(false);
         schedulePreviewUpdate();
         toast(`${activeFile.path} saved!`, 'success');

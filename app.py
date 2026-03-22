@@ -1,17 +1,27 @@
+import os
+import logging
 from flask import Flask, redirect, url_for, render_template, Blueprint, request, jsonify
 from database import db
 from modules.chatbot.routes import chatbot_bp
-import os
-import docker
+
+try:
+    import docker  # type: ignore
+except ModuleNotFoundError:
+    docker = None
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # DOCKER CLIENT
 # ============================================================
-try:
-    client = docker.from_env()
-except Exception as e:
-    print(f"Warning: Docker not found or not running. Code execution feature will be disabled. Error: {e}")
-    client = None
+client = None
+if docker is None:
+    logger.warning("Docker SDK is not installed. Code execution feature is disabled.")
+else:
+    try:
+        client = docker.from_env()
+    except Exception as e:
+        logger.warning("Docker is not running or unavailable. Code execution is disabled. Error: %s", e)
 
 # ============================================================
 # CODE EXECUTION BLUEPRINT
@@ -21,7 +31,7 @@ execution_bp = Blueprint("execution", __name__)
 
 @execution_bp.route("/execute", methods=["POST"])
 def handle_execution():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     user_id = data.get("user_id")
     code = data.get("code")
     filename = data.get("filename", "main.py")
@@ -49,15 +59,16 @@ def handle_execution():
 # ============================================================
 def run_persistent_env(user_id, code):
 
-    base_path = os.path.abspath(f"user_workspaces/{user_id}")
-    lib_path = os.path.abspath(f"user_workspaces/{user_id}/libs")
+    workspace_id = str(user_id or "anonymous")
+    base_path = os.path.abspath(f"user_workspaces/{workspace_id}")
+    lib_path = os.path.abspath(f"user_workspaces/{workspace_id}/libs")
 
     os.makedirs(base_path, exist_ok=True)
     os.makedirs(lib_path, exist_ok=True)
 
     file_path = os.path.join(base_path, "main.py")
 
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(code)
 
     if client is None:

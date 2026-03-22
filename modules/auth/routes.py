@@ -1,19 +1,36 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from modules.auth.service import AuthService
 from modules.auth.token_service import TokenService
-from authlib.integrations.flask_client import OAuth
 import os
+
+try:
+    from authlib.integrations.flask_client import OAuth
+except ModuleNotFoundError:
+    OAuth = None
 
 auth_bp = Blueprint("auth", __name__, template_folder="../../templates")
 
 # OAuth setup — will be initialized with the app
-oauth = OAuth()
+oauth = OAuth() if OAuth else None
 google_registered = False
+
+
+def is_google_oauth_enabled():
+    return bool(
+        oauth
+        and os.getenv("GOOGLE_CLIENT_ID")
+        and os.getenv("GOOGLE_CLIENT_SECRET")
+    )
 
 
 def get_google_client():
     """Get or register the Google OAuth client."""
     global google_registered
+    if oauth is None:
+        raise RuntimeError("Google OAuth dependency missing. Install Authlib to enable this feature.")
+    if not os.getenv("GOOGLE_CLIENT_ID") or not os.getenv("GOOGLE_CLIENT_SECRET"):
+        raise RuntimeError("Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.")
+
     if not google_registered:
         oauth.init_app(current_app)
         oauth.register(
@@ -24,7 +41,10 @@ def get_google_client():
             client_kwargs={'scope': 'openid email profile'},
         )
         google_registered = True
-    return oauth.google
+    google_client = getattr(oauth, "google", None)
+    if google_client is None:
+        raise RuntimeError("Google OAuth client registration failed.")
+    return google_client
 
 
 # ============================================================
@@ -70,7 +90,7 @@ def login():
         else:
             flash(result, "danger")
 
-    return render_template("login.html")
+    return render_template("login.html", google_oauth_enabled=is_google_oauth_enabled())
 
 
 # ============================================================
@@ -114,7 +134,7 @@ def register():
         else:
             flash(result, "danger")
 
-    return render_template("register.html")
+    return render_template("register.html", google_oauth_enabled=is_google_oauth_enabled())
 
 
 # ============================================================
@@ -159,6 +179,10 @@ def resend_otp():
 # ============================================================
 @auth_bp.route("/google")
 def google_login():
+    if not is_google_oauth_enabled():
+        flash("Google login is currently unavailable. Use email/password login.", "info")
+        return redirect(url_for("auth.login"))
+
     try:
         google = get_google_client()
         redirect_uri = url_for('auth.google_callback', _external=True)
@@ -170,6 +194,10 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+    if not is_google_oauth_enabled():
+        flash("Google login is currently unavailable. Use email/password login.", "info")
+        return redirect(url_for("auth.login"))
+
     try:
         google = get_google_client()
         token = google.authorize_access_token()

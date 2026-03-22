@@ -10,9 +10,20 @@ class NeuraAgent:
     def __init__(self, user_id: int, website_id: int):
         self.user_id = user_id
         self.website_id = website_id
-        self.llm = GroqLLM(model="llama-3.1-8b-instant")
+        self.llm = None
+        self._init_error = None
+        try:
+            self.llm = GroqLLM(model="llama-3.1-8b-instant")
+        except Exception as e:
+            self._init_error = str(e)
 
     def run(self, instruction: str) -> str:
+        if self.llm is None:
+            return (
+                "AI advisor is unavailable right now. You can still edit this page manually "
+                "and retry once GROQ_API_KEY is configured."
+            )
+
         messages = [
             {
                 "role": "system",

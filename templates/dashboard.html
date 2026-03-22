@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h2><span class="text-gradient">Builder Dashboard</span></h2>
+        <p>
+            Welcome back, <strong>{{ username or user.username }}</strong>.
+            Build, import, and manage all your websites from one place.
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <a href="{{ url_for('features.template_gallery') }}" class="btn-outline">Template Gallery</a>
+        <a href="{{ url_for('ai_agent.agent_dashboard') }}" class="btn-outline">AI Agent</a>
+        <a href="{{ url_for('auth.pricing') }}" class="btn-outline">Pricing</a>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="glass-card">
+        <h3 style="margin-bottom: 0.3rem;">Generate New Website</h3>
+        <p style="font-size: 0.85rem; margin-bottom: 1rem;">
+            Describe your idea and generate a website using AI.
+        </p>
+        <form action="{{ url_for('ai_generator.generate') }}" method="POST">
+            <div class="form-group" style="margin-top: 0;">
+                <label for="prompt">Prompt</label>
+                <textarea id="prompt" name="prompt" rows="4" required
+                    placeholder="Example: Build a clean SaaS landing page with pricing and testimonials."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="framework">Framework</label>
+                    <select id="framework" name="framework">
+                        <option value="tailwind">Tailwind</option>
+                        <option value="bootstrap">Bootstrap</option>
+                        <option value="vanilla">Vanilla HTML</option>
+                        <option value="react">React</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="engine">Engine</label>
+                    <select id="engine" name="engine">
+                        <option value="groq">Groq</option>
+                        <option value="gemini">Gemini</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary w-100">Generate Website</button>
+        </form>
+    </div>
+
+    <div class="glass-card">
+        <h3 style="margin-bottom: 0.3rem;">Import Existing Website</h3>
+        <p style="font-size: 0.85rem; margin-bottom: 1rem;">
+            Upload a ZIP file and continue editing it in the IDE.
+        </p>
+        <form action="{{ url_for('upload.upload_website') }}" method="POST" enctype="multipart/form-data">
+            <div class="form-group" style="margin-top: 0;">
+                <label for="name">Project Name</label>
+                <input id="name" type="text" name="name" placeholder="Uploaded Website">
+            </div>
+            <div class="form-group">
+                <label for="zipfile">ZIP File</label>
+                <input id="zipfile" type="file" name="zipfile" accept=".zip" required>
+            </div>
+            <button type="submit" class="btn-outline w-100">Upload ZIP</button>
+        </form>
+
+        <div class="token-box">
+            <h4 style="margin-bottom: 0.6rem;">Token Summary</h4>
+            <p><strong>Balance:</strong> {{ token_info.display or session.get('tokens', 0) }}</p>
+            <p><strong>Role:</strong> {{ token_info.role or user.role }}</p>
+            <p><strong>Generate website:</strong> {{ token_info.costs.generate_website if token_info and token_info.costs else 10 }} tokens</p>
+            <p><strong>Regenerate section:</strong> {{ token_info.costs.regenerate_section if token_info and token_info.costs else 3 }} tokens</p>
+            <p><strong>Export website:</strong> {{ token_info.costs.export_website if token_info and token_info.costs else 2 }} tokens</p>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <div class="dashboard-header" style="margin-bottom: 1rem;">
+        <div>
+            <h3 style="margin-bottom: 0.2rem;">Your Websites</h3>
+            <p style="font-size: 0.85rem;">Open editor, preview, export, or delete projects.</p>
+        </div>
+    </div>
+
+    {% if websites %}
+    <div class="website-grid" id="website-grid">
+        {% for website in websites %}
+        <div class="glass-card website-card" id="website-card-{{ website.id }}">
+            <div class="website-card-header">
+                <h3 title="{{ website.name }}">{{ website.name }}</h3>
+                <span class="badge">{{ website.framework|upper }}</span>
+            </div>
+            <p class="website-meta">
+                {{ website.pages|length }} page(s) • {{ website.project_files|length }} file(s)
+            </p>
+            <p class="website-meta">
+                Created: {{ website.created_at.strftime('%Y-%m-%d %H:%M') if website.created_at else 'N/A' }}
+            </p>
+
+            <div class="website-card-actions">
+                <a href="{{ url_for('website_bp.ide_website', website_id=website.id) }}" class="btn-primary btn-sm">IDE</a>
+                <a href="{{ url_for('website_bp.view_website', website_id=website.id) }}" class="btn-outline btn-sm">Preview</a>
+                <a href="{{ url_for('website_bp.export_website', website_id=website.id) }}" class="btn-outline btn-sm">Export</a>
+                <button type="button" class="btn-outline btn-sm danger-btn"
+                    onclick='deleteWebsite({{ website.id }}, {{ website.name|tojson }})'>
+                    Delete
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass-card" id="empty-websites">
+        <h3 style="margin-bottom: 0.5rem;">No websites yet</h3>
+        <p style="margin-bottom: 1rem;">
+            Start by generating your first site or upload an existing ZIP project.
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+async function deleteWebsite(websiteId, websiteName) {
+    const confirmed = confirm(`Delete "${websiteName}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/website/api/website/${websiteId}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to delete website');
+        }
+
+        const card = document.getElementById(`website-card-${websiteId}`);
+        if (card) card.remove();
+
+        const grid = document.getElementById('website-grid');
+        if (grid && grid.children.length === 0) {
+            grid.outerHTML = `
+                <div class="glass-card" id="empty-websites">
+                    <h3 style="margin-bottom: 0.5rem;">No websites yet</h3>
+                    <p style="margin-bottom: 1rem;">
+                        Start by generating your first site or upload an existing ZIP project.
+                    </p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        alert(error.message || 'Unable to delete website right now.');
+    }
+}
+</script>
+
+<style>
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+.token-box {
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 1rem;
+    font-size: 0.85rem;
+}
+
+.token-box p {
+    margin-bottom: 0.35rem;
+}
+
+.website-meta {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.danger-btn {
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+}
+
+@media (max-width: 980px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
