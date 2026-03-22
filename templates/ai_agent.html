@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header mb-4 border-b border-gray-800 pb-4">
+    <div>
+        <h2 style="font-family: 'Outfit';"><i class="fas fa-terminal" style="color: #10b981;"></i> NeuraForge AI Coding Agent</h2>
+        <p>Give instructions to your autonomous AI coding agent. It will read your project, plan changes, and execute them safely.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('auth.dashboard') }}" class="btn-outline"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="agent-workspace" style="display: flex; gap: 20px; height: calc(100vh - 200px);">
+    <!-- Control Panel -->
+    <div class="glass-card" style="width: 35%; display: flex; flex-direction: column;">
+        <h3 style="margin-bottom: 15px;"><i class="fas fa-robot"></i> Agent Control</h3>
+        
+        <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+            <label for="instruction" style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px;">Instruction</label>
+            <textarea id="instruction" placeholder="E.g., Create a new Python API route for returning system stats..." style="flex: 1; min-height: 150px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; padding: 12px; font-family: 'Inter', sans-serif; resize: none;"></textarea>
+            
+            <button id="runAgentBtn" class="btn-primary" style="margin-top: 15px; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16,185,129,0.3); border: none;">
+                <i class="fas fa-play"></i> Execute Instruction
+            </button>
+        </div>
+
+        <div id="agentStatus" style="margin-top: 20px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; display: none;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="spinner" style="width: 20px; height: 20px; border-width: 2px; border-left-color: #10b981;"></div>
+                <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">Agent is working...</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 0.8rem; margin-top: 8px;">Depending on the complexity, this might take a minute.</p>
+        </div>
+    </div>
+
+    <!-- Terminal Output -->
+    <div class="glass-card terminal-window" style="flex: 1; display: flex; flex-direction: column; background: #0a0a0f;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+            <h3 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;"><i class="fas fa-code"></i> Execution Logs</h3>
+            <button onclick="clearLogs()" style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.8rem;"><i class="fas fa-eraser"></i> Clear</button>
+        </div>
+        
+        <div id="terminalOutput" style="flex: 1; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #cbd5e1; padding: 10px 0;">
+            <div style="color: #64748b;">> Ready. Awaiting instructions.</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.terminal-window ::-webkit-scrollbar { width: 6px; }
+.terminal-window ::-webkit-scrollbar-track { background: transparent; }
+.terminal-window ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.log-line { margin-bottom: 4px; line-height: 1.4; word-wrap: break-word; }
+.log-info { color: #94a3b8; }
+.log-success { color: #10b981; }
+.log-error { color: #f87171; }
+.log-cmd { color: #a78bfa; }
+</style>
+
+<script>
+function clearLogs() {
+    document.getElementById('terminalOutput').innerHTML = '<div style="color: #64748b;">> Logs cleared.</div>';
+}
+
+function appendLog(message, type = 'info') {
+    const term = document.getElementById('terminalOutput');
+    const div = document.createElement('div');
+    div.className = `log-line log-${type}`;
+    
+    // Add prompt arrow if info
+    const prefix = type === 'info' ? '> ' : '';
+    
+    // Simple coloring for different log phrases
+    let coloredMsg = message;
+    if (message.includes('Phase')) {
+        coloredMsg = `<span style="color: #38bdf8; font-weight: bold;">${message}</span>`;
+    } else if (message.includes('Running command')) {
+        coloredMsg = `<span class="log-cmd">${message}</span>`;
+    } else if (message.includes('Error') || message.includes('Failed')) {
+        div.className = 'log-line log-error';
+    } else if (message.includes('Success') || message.includes('Modified')) {
+        div.className = 'log-line log-success';
+    }
+
+    div.innerHTML = prefix + coloredMsg;
+    term.appendChild(div);
+    term.scrollTop = term.scrollHeight;
+}
+
+document.getElementById('runAgentBtn').addEventListener('click', async function() {
+    const instruction = document.getElementById('instruction').value.trim();
+    if (!instruction) {
+        alert("Please enter an instruction.");
+        return;
+    }
+
+    const btn = this;
+    const status = document.getElementById('agentStatus');
+    
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    status.style.display = 'block';
+    
+    appendLog('Sending instruction to agent engine...', 'info');
+
+    try {
+        const response = await fetch('/ai-agent/api/run', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ instruction: instruction })
+        });
+
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            appendLog('Agent execution completed successfully.', 'success');
+            
+            if (data.plan && data.plan.length > 0) {
+                appendLog('--- Execution Plan ---', 'info');
+                data.plan.forEach((step, i) => appendLog(`${i+1}. ${step.action}: ${step.description}`, 'info'));
+            }
+            
+            if (data.logs && data.logs.length > 0) {
+                appendLog('--- Detailed Logs ---', 'info');
+                data.logs.forEach(log => appendLog(log, 'info'));
+            }
+            
+            if (data.files_modified && data.files_modified.length > 0) {
+                appendLog('--- Files Modified ---', 'success');
+                data.files_modified.forEach(file => appendLog(`- ${file}`, 'success'));
+            }
+        } else {
+            appendLog('Agent execution failed.', 'error');
+            appendLog(data.message || 'Unknown error', 'error');
+            if (data.logs) {
+                data.logs.forEach(log => appendLog(log, 'error'));
+            }
+        }
+    } catch (e) {
+        appendLog(`Network or server error: ${e.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        status.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

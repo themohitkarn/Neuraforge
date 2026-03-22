@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h2><span class="text-gradient">⚡ Admin Panel</span></h2>
+    <p style="color: #64748b;">Manage users, tokens, and platform.</p>
+</div>
+
+<!-- Stats -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+    <div class="glass-card" style="text-align: center; padding: 1.25rem;">
+        <p style="font-size: 2rem; font-weight: 700; color: #6366f1;">{{ stats.total_users }}</p>
+        <p style="font-size: 0.8rem; color: #94a3b8;">Total Users</p>
+    </div>
+    <div class="glass-card" style="text-align: center; padding: 1.25rem;">
+        <p style="font-size: 2rem; font-weight: 700; color: #a78bfa;">{{ stats.premium_users }}</p>
+        <p style="font-size: 0.8rem; color: #94a3b8;">Premium Users</p>
+    </div>
+    <div class="glass-card" style="text-align: center; padding: 1.25rem;">
+        <p style="font-size: 2rem; font-weight: 700; color: #10b981;">{{ stats.verified_users }}</p>
+        <p style="font-size: 0.8rem; color: #94a3b8;">Verified Users</p>
+    </div>
+    <div class="glass-card" style="text-align: center; padding: 1.25rem;">
+        <p style="font-size: 2rem; font-weight: 700; color: #f59e0b;">{{ stats.total_websites }}</p>
+        <p style="font-size: 0.8rem; color: #94a3b8;">Total Websites</p>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="glass-card" style="overflow-x: auto;">
+    <h3 style="margin-bottom: 1rem;">All Users</h3>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <thead>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left;">
+                <th style="padding: 10px; color: #64748b;">ID</th>
+                <th style="padding: 10px; color: #64748b;">Username</th>
+                <th style="padding: 10px; color: #64748b;">Email</th>
+                <th style="padding: 10px; color: #64748b;">Role</th>
+                <th style="padding: 10px; color: #64748b;">Tokens</th>
+                <th style="padding: 10px; color: #64748b;">Verified</th>
+                <th style="padding: 10px; color: #64748b;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);" id="user-row-{{ user.id }}">
+                <td style="padding: 10px; color: #94a3b8;">#{{ user.id }}</td>
+                <td style="padding: 10px; font-weight: 600;">{{ user.username }}</td>
+                <td style="padding: 10px; color: #94a3b8;">{{ user.email }}</td>
+                <td style="padding: 10px;">
+                    <select onchange="changeRole({{ user.id }}, this.value)" 
+                            style="background: rgba(0,0,0,0.3); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); 
+                                   border-radius: 4px; padding: 4px 8px; font-size: 0.8rem;">
+                        <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
+                        <option value="premium" {% if user.role == 'premium' %}selected{% endif %}>Premium</option>
+                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </td>
+                <td style="padding: 10px;">
+                    <span id="tokens-{{ user.id }}" style="color: #f59e0b; font-weight: 600;">{{ user.token_display }}</span>
+                    <button onclick="grantTokens({{ user.id }})" 
+                            style="background: none; border: none; color: #6366f1; cursor: pointer; font-size: 0.75rem; margin-left: 4px;"
+                            title="Grant tokens">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                </td>
+                <td style="padding: 10px;">
+                    {% if user.is_verified %}
+                        <span style="color: #10b981;">✓</span>
+                    {% else %}
+                        <span style="color: #f87171;">✗</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px;">
+                    <button onclick="deleteUser({{ user.id }}, '{{ user.username }}')" 
+                            style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 0.8rem;"
+                            title="Delete user">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+async function changeRole(userId, role) {
+    const res = await fetch(`/admin/user/${userId}/role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+    });
+    const data = await res.json();
+    if (data.success) {
+        document.getElementById(`tokens-${userId}`).textContent = data.tokens;
+    }
+}
+
+async function grantTokens(userId) {
+    const amount = prompt('How many tokens to grant?');
+    if (!amount || isNaN(amount)) return;
+
+    const res = await fetch(`/admin/user/${userId}/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: parseInt(amount) })
+    });
+    const data = await res.json();
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.error);
+    }
+}
+
+async function deleteUser(userId, username) {
+    if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+
+    const res = await fetch(`/admin/user/${userId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+        document.getElementById(`user-row-${userId}`).remove();
+    } else {
+        alert(data.error);
+    }
+}
+</script>
+{% endblock %}

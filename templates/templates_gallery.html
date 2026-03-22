@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h2><span class="text-gradient">🎨 Template Gallery</span></h2>
+    <p style="color: #94a3b8;">Pick a template and customize it with AI</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+    {% for t in templates %}
+    <div class="glass-card" style="position: relative; overflow: hidden;">
+        <div style="width: 50px; height: 50px; background: {{ t.color }}20; border-radius: 12px; 
+                    display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <i class="{{ t.icon }}" style="font-size: 1.3rem; color: {{ t.color }};"></i>
+        </div>
+        <h3 style="margin-bottom: 0.25rem;">{{ t.name }}</h3>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.25rem;">{{ t.desc }}</p>
+        
+        <form action="{{ url_for('features.use_template', template_id=t.id) }}" method="POST">
+            <select name="framework" style="width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.3); 
+                    color: #e2e8f0; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; 
+                    font-size: 0.8rem; margin-bottom: 0.75rem;">
+                <option value="tailwind">Tailwind CSS</option>
+                <option value="bootstrap">Bootstrap</option>
+                <option value="vanilla">Vanilla HTML</option>
+                <option value="react">React</option>
+            </select>
+            <button type="submit" class="btn-primary btn-sm w-100" 
+                    style="width: 100%; text-align: center;">
+                Use Template ✨
+            </button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

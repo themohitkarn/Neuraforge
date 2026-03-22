@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDE: {{ website.name }} — NeuraForge</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CodeMirror 5 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+    <!-- CodeMirror addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <!-- CodeMirror Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <!-- Tailwind for Preview -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+        /* ============================================================
+           CSS RESET & DESIGN TOKENS
+        ============================================================ */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-base:       #09090f;
+            --bg-surface:    #0f1117;
+            --bg-elevated:   #161b27;
+            --bg-hover:      rgba(255,255,255,0.04);
+            --border:        rgba(255,255,255,0.07);
+            --border-accent: rgba(99,102,241,0.3);
+            --text-primary:  #e2e8f0;
+            --text-muted:    #64748b;
+            --text-sub:      #94a3b8;
+            --accent:        #6366f1;
+            --accent-soft:   rgba(99,102,241,0.15);
+            --accent-glow:   rgba(99,102,241,0.4);
+            --success:       #10b981;
+            --danger:        #ef4444;
+            --warn:          #f59e0b;
+            --terminal-bg:   #050508;
+            --sidebar-w:     240px;
+            --toolbar-h:     46px;
+            --terminal-h:    200px;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================================
+           TOOLBAR
+        ============================================================ */
+        .ide-toolbar {
+            height: var(--toolbar-h);
+            background: linear-gradient(135deg, #0c1020, #1a1730);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            z-index: 200;
+            gap: 8px;
+        }
+        .toolbar-left  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .toolbar-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            background: linear-gradient(to right, #a78bfa, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+        }
+        .site-name {
+            color: var(--text-sub);
+            font-size: 0.82rem;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .site-name span { color: var(--text-primary); font-weight: 600; }
+
+        .tb-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-sub);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.77rem;
+            cursor: pointer;
+            transition: all 0.18s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .tb-btn:hover         { background: var(--accent-soft); border-color: var(--border-accent); color: #fff; }
+        .tb-btn.primary       { background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; color: #fff; }
+        .tb-btn.primary:hover { box-shadow: 0 4px 14px var(--accent-glow); transform: translateY(-1px); }
+        .tb-btn.success       { background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; }
+        .tb-btn.success:hover { box-shadow: 0 4px 14px rgba(16,185,129,0.35); transform: translateY(-1px); }
+        .tb-btn.danger:hover  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); color: #f87171; }
+
+        /* Unsaved-changes dot */
+        .dirty-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex-shrink: 0; display: none; }
+        .dirty-dot.visible { display: inline-block; }
+
+        /* ============================================================
+           MAIN LAYOUT
+        ============================================================ */
+        .ide-main { display: flex; flex: 1; overflow: hidden; }
+
+        /* ============================================================
+           LEFT SIDEBAR
+        ============================================================ */
+        .ide-sidebar {
+            width: var(--sidebar-w);
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        /* Tab bar */
+        .sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .sidebar-tab {
+            flex: 1; padding: 9px 4px; text-align: center;
+            font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+            color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+            border-bottom: 2px solid transparent;
+        }
+        .sidebar-tab:hover  { color: var(--text-sub); background: var(--bg-hover); }
+        .sidebar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* Panels */
+        .sidebar-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+        .sidebar-panel.active { display: flex; }
+
+        .sidebar-header {
+            padding: 10px 11px;
+            font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.1px;
+            color: var(--text-muted); font-weight: 700;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.04); flex-shrink: 0;
+        }
+        .sidebar-header button {
+            background: none; border: none; color: var(--accent); cursor: pointer;
+            font-size: 0.8rem; padding: 2px 5px; border-radius: 4px; transition: background 0.15s;
+        }
+        .sidebar-header button:hover { background: var(--accent-soft); }
+
+        /* ---- PAGE TREE ---- */
+        .page-tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+        .page-tree::-webkit-scrollbar { width: 3px; }
+        .page-tree::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+        .page-item {
+            margin: 2px 6px; border-radius: 6px;
+            border: 1px solid transparent; transition: border-color 0.2s; overflow: hidden;
+        }
+        .page-item.active { border-color: var(--border-accent); background: rgba(99,102,241,0.04); }
+
+        .page-header {
+            display: flex; align-items: center; padding: 7px 8px; cursor: pointer;
+            gap: 7px; transition: background 0.13s; user-select: none;
+        }
+        .page-header:hover { background: var(--bg-hover); }
+        .page-header .icon { color: var(--accent); font-size: 0.74rem; width: 14px; text-align: center; }
+        .page-header .name { flex: 1; font-size: 0.81rem; font-weight: 500; color: var(--text-primary); }
+        .page-header .actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.13s; }
+        .page-header:hover .actions { opacity: 1; }
+        .page-header .actions button {
+            background: none; border: none; color: var(--text-sub); cursor: pointer;
+            padding: 2px 4px; border-radius: 3px; font-size: 0.63rem; transition: all 0.13s;
+        }
+        .page-header .actions button:hover { color: #f87171; background: rgba(239,68,68,0.1); }
+        .page-header .actions .edit-btn:hover { color: var(--accent); background: var(--accent-soft); }
+
+        .section-list { padding: 0 0 4px 0; }
+        .section-item {
+            display: flex; align-items: center; padding: 5px 8px 5px 26px; cursor: pointer;
+            gap: 7px; font-size: 0.77rem; color: var(--text-sub); transition: all 0.13s; user-select: none;
+        }
+        .section-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .section-item.active { color: #a78bfa; background: rgba(99,102,241,0.07); }
+        .section-item .dot { width: 5px; height: 5px; background: #374151; border-radius: 50%; flex-shrink: 0; }
+        .section-item.active .dot { background: #a78bfa; }
+        .section-item .sec-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .section-item .sec-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.13s; }
+        .section-item:hover .sec-actions { opacity: 1; }
+        .section-item .sec-actions button {
+            background: none; border: none; color: var(--text-sub); cursor: pointer;
+            padding: 1px 3px; border-radius: 3px; font-size: 0.61rem; transition: all 0.13s;
+        }
+        .section-item .sec-actions button:hover { color: #f87171; background: rgba(239,68,68,0.1); }
+
+        .add-section-btn {
+            display: flex; align-items: center; gap: 5px; padding: 5px 8px 5px 26px;
+            font-size: 0.71rem; color: var(--accent); cursor: pointer;
+            background: none; border: none; width: 100%; text-align: left; transition: all 0.13s;
+        }
+        .add-section-btn:hover { background: var(--accent-soft); }
+
+        /* ---- FILE EXPLORER ---- */
+        .file-tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+        .file-tree::-webkit-scrollbar { width: 3px; }
+        .file-tree::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+        .file-group-header {
+            padding: 6px 10px 3px; font-size: 0.64rem; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-muted); font-weight: 700;
+        }
+        .file-item {
+            display: flex; align-items: center; padding: 5px 8px 5px 18px; cursor: pointer;
+            gap: 7px; font-size: 0.78rem; color: var(--text-sub); transition: all 0.13s;
+        }
+        .file-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .file-item.active { color: #a78bfa; background: rgba(99,102,241,0.07); }
+        .file-item i { width: 14px; text-align: center; font-size: 0.71rem; }
+        .file-item .file-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-item .file-actions { display: flex; gap: 2px; opacity: 0; }
+        .file-item:hover .file-actions { opacity: 1; }
+        .file-item .file-actions button {
+            background: none; border: none; color: var(--text-sub); cursor: pointer;
+            padding: 1px 3px; border-radius: 3px; font-size: 0.61rem;
+        }
+        .file-item .file-actions button:hover { color: #f87171; background: rgba(239,68,68,0.1); }
+
+        /* ============================================================
+           CENTER PREVIEW
+        ============================================================ */
+        .ide-center {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            border-right: 1px solid var(--border); min-width: 0;
+        }
+        .preview-bar {
+            height: 34px; background: rgba(10,12,20,0.9);
+            display: flex; align-items: center; padding: 0 10px; gap: 7px;
+            border-bottom: 1px solid rgba(255,255,255,0.04); flex-shrink: 0;
+        }
+        .preview-bar .dot-group { display: flex; gap: 4px; }
+        .preview-bar .d { width: 9px; height: 9px; border-radius: 50%; }
+        .preview-bar .d.r { background: #ef4444; }
+        .preview-bar .d.y { background: #f59e0b; }
+        .preview-bar .d.g { background: #10b981; }
+        .preview-bar .url-bar {
+            flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 4px; padding: 2px 9px; font-size: 0.71rem; color: var(--text-muted);
+            font-family: 'JetBrains Mono'; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .vt-group { display: flex; gap: 2px; }
+        .vt-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            color: var(--text-sub); padding: 2px 7px; cursor: pointer; font-size: 0.67rem; transition: all 0.13s;
+        }
+        .vt-btn:first-child { border-radius: 4px 0 0 4px; }
+        .vt-btn:last-child  { border-radius: 0 4px 4px 0; }
+        .vt-btn.active { background: var(--accent-soft); color: #a78bfa; border-color: var(--border-accent); }
+        .vt-btn:hover  { background: rgba(99,102,241,0.1); }
+
+        .preview-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        /* FIX #5: improved sandbox keeps scripts+forms, drops unnecessary permissions */
+        #preview-frame { flex: 1; width: 100%; border: none; background: #fff; }
+
+        /* Inline AI bar */
+        #inline-ai-bar {
+            display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 82%; max-width: 580px;
+            background: rgba(10,10,18,0.96); backdrop-filter: blur(12px);
+            border: 1px solid var(--border-accent); border-radius: 12px;
+            padding: 10px 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            z-index: 100; align-items: center; gap: 8px;
+        }
+        #inline-ai-bar input { flex: 1; background: transparent; border: none; color: #fff; font-size: 0.87rem; outline: none; }
+        #inline-ai-bar .ai-icon { color: #a78bfa; font-size: 1rem; display: flex; align-items: center; }
+
+        /* ============================================================
+           RIGHT EDITOR PANE
+        ============================================================ */
+        .ide-editor {
+            width: 44%; background: var(--bg-base);
+            display: flex; flex-direction: column; overflow: hidden;
+            transition: width 0.28s ease; flex-shrink: 0;
+        }
+        .ide-editor.hidden { width: 0; overflow: hidden; }
+
+        .editor-header {
+            height: 34px; background: rgba(8,10,18,0.95);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+        }
+        .editor-tab {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.77rem; color: #a78bfa; font-family: 'JetBrains Mono'; font-weight: 500;
+        }
+        .editor-tab i { font-size: 0.67rem; }
+        .editor-actions { display: flex; gap: 3px; }
+
+        /* CodeMirror overrides */
+        .CodeMirror {
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 12.5px !important;
+            height: 100% !important;
+            line-height: 1.65 !important;
+            background: #0a0c14 !important;
+        }
+        #code-editor-container { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* ============================================================
+           TERMINAL PANEL (FIX #7)
+        ============================================================ */
+        .terminal-panel {
+            height: var(--terminal-h); background: var(--terminal-bg);
+            border-top: 1px solid rgba(99,102,241,0.2);
+            display: flex; flex-direction: column; flex-shrink: 0;
+            transition: height 0.25s ease;
+        }
+        .terminal-panel.collapsed { height: 30px; }
+
+        .terminal-header {
+            height: 30px; background: rgba(15,15,25,0.9);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0; cursor: pointer; user-select: none;
+        }
+        .t-title { font-family: 'JetBrains Mono'; font-size: 0.71rem; color: var(--success); display: flex; align-items: center; gap: 6px; }
+        .t-actions { display: flex; gap: 4px; }
+        .t-actions button {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 0.7rem; padding: 2px 5px; border-radius: 3px; transition: all 0.13s;
+        }
+        .t-actions button:hover { background: var(--bg-hover); color: var(--text-sub); }
+
+        #terminal-output {
+            flex: 1; overflow-y: auto; padding: 9px 13px;
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; color: #a3e635;
+        }
+        #terminal-output::-webkit-scrollbar { width: 3px; }
+        #terminal-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); }
+        .t-line      { margin: 0; white-space: pre-wrap; word-break: break-all; }
+        .t-line.err  { color: #f87171; }
+        .t-line.info { color: #93c5fd; }
+        .t-line.warn { color: #fbbf24; }
+        .t-line.sys  { color: var(--text-muted); }
+        .t-prompt    { color: #a78bfa; }
+
+        .badge {
+            background: var(--accent-soft); color: #a78bfa;
+            border: 1px solid var(--border-accent);
+            padding: 1px 6px; border-radius: 10px; font-size: 0.63rem; font-weight: 700;
+        }
+
+        /* ============================================================
+           MODALS
+        ============================================================ */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
+            z-index: 999; justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: #1a1726; border: 1px solid var(--border-accent); border-radius: 12px;
+            padding: 22px; width: 92%; max-width: 440px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+            animation: modalIn 0.2s ease;
+        }
+        @keyframes modalIn { from { opacity:0; transform: scale(0.96) translateY(8px); } to { opacity:1; transform: none; } }
+        .modal-box h3 { font-family: 'Outfit'; font-size: 1.05rem; margin-bottom: 14px; color: var(--text-primary); }
+        .modal-box input, .modal-box textarea, .modal-box select {
+            width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+            color: var(--text-primary); font-size: 0.87rem; font-family: 'Inter';
+            margin-bottom: 10px; transition: border-color 0.18s;
+        }
+        .modal-box input:focus, .modal-box textarea:focus { outline: none; border-color: var(--accent); }
+        .modal-box .btn-row { display: flex; gap: 7px; justify-content: flex-end; margin-top: 6px; }
+
+        /* ============================================================
+           CHATBOT
+        ============================================================ */
+        #ai-chat-widget {
+            position: fixed; bottom: 14px; right: 14px; width: 328px;
+            background: rgba(12,12,22,0.96); border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.65); border: 1px solid var(--border-accent);
+            display: flex; flex-direction: column; overflow: hidden;
+            z-index: 998; backdrop-filter: blur(12px); color: white;
+            transition: height 0.25s ease; height: 42px;
+        }
+        #ai-chat-widget.open { height: 450px; }
+        #ai-chat-header {
+            padding: 10px 14px; background: linear-gradient(135deg, #6366f1, #4f46e5);
+            cursor: pointer; font-weight: 600; font-size: 0.81rem;
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        #ai-chat-body { display: none; flex-direction: column; height: calc(100% - 42px); }
+        #ai-chat-widget.open #ai-chat-body { display: flex; }
+        #ai-chat-messages {
+            flex: 1; padding: 11px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+        }
+        #ai-chat-messages::-webkit-scrollbar { width: 3px; }
+        #ai-chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+        .msg { padding: 7px 11px; border-radius: 8px; font-size: 0.81rem; max-width: 88%; word-wrap: break-word; line-height: 1.45; }
+        .msg-ai   { background: rgba(255,255,255,0.07); align-self: flex-start; }
+        .msg-user { background: var(--accent); align-self: flex-end; }
+        #ai-chat-input-wrapper { display: flex; padding: 8px; border-top: 1px solid rgba(255,255,255,0.07); gap: 6px; }
+        #ai-chat-input-wrapper input {
+            flex: 1; padding: 7px 10px; border-radius: 6px; border: none; outline: none;
+            background: rgba(255,255,255,0.07); color: white; font-size: 0.81rem;
+        }
+        #ai-chat-input-wrapper button {
+            background: var(--accent); color: white; border: none; padding: 7px 12px;
+            border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.77rem; transition: background 0.18s;
+        }
+        #ai-chat-input-wrapper button:hover { background: #4f46e5; }
+
+        /* ============================================================
+           COMPONENT PANEL
+        ============================================================ */
+        #component-panel {
+            display: none; position: fixed; top: var(--toolbar-h); right: 0;
+            width: 295px; height: calc(100vh - var(--toolbar-h));
+            background: rgba(12,12,20,0.98); border-left: 1px solid var(--border-accent);
+            z-index: 500; overflow-y: auto; padding: 14px; backdrop-filter: blur(12px);
+        }
+
+        /* ============================================================
+           TOAST
+        ============================================================ */
+        #toast {
+            visibility: hidden; min-width: 230px; text-align: center; border-radius: 8px;
+            padding: 10px 18px; position: fixed; z-index: 10000;
+            left: 50%; bottom: 22px; transform: translateX(-50%);
+            font-size: 0.81rem; font-weight: 500; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #toast.show    { visibility: visible; animation: toastIn 0.35s, toastOut 0.35s 2.65s; }
+        #toast.success { background: rgba(16,185,129,0.92); color: #fff; }
+        #toast.error   { background: rgba(239,68,68,0.92);  color: #fff; }
+        @keyframes toastIn  { from { bottom:0; opacity:0; } to { bottom:22px; opacity:1; } }
+        @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+        /* ============================================================
+           SCROLLBARS
+        ============================================================ */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+        /* SortableJS drag ghost */
+        .sortable-ghost { opacity: 0.3; background: var(--accent-soft); }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOOLBAR
+============================================================ -->
+<div class="ide-toolbar">
+    <div class="toolbar-left">
+        <span class="logo">⚡ NeuraForge</span>
+        <div class="site-name">
+            <span id="website-name">{{ website.name }}</span>
+            <button class="tb-btn" onclick="openRenameWebsiteModal()" style="padding:2px 7px;font-size:0.67rem;">
+                <i class="fas fa-pen"></i>
+            </button>
+        </div>
+    </div>
+    <div class="toolbar-right">
+        <button class="tb-btn" onclick="toggleComponentPanel()" title="Component Library">
+            <i class="fas fa-puzzle-piece"></i> Components
+        </button>
+        <button class="tb-btn" onclick="runSEO()" title="SEO Analysis">
+            <i class="fas fa-search"></i> SEO
+        </button>
+        <button class="tb-btn" onclick="openShareModal()"><i class="fas fa-share-alt"></i></button>
+        <button class="tb-btn" onclick="deployInfo()"><i class="fas fa-rocket"></i></button>
+        <button class="tb-btn" onclick="window.open('/website/view/{{ website.id }}','_blank')">
+            <i class="fas fa-external-link-alt"></i> Preview
+        </button>
+        <button class="tb-btn" onclick="window.location.href='/website/export/{{ website.id }}'">
+            <i class="fas fa-download"></i> Export
+        </button>
+        <!-- FIX #7: Run button executes code in terminal -->
+        <button class="tb-btn success" onclick="runCode()">
+            <i class="fas fa-play"></i> Run
+        </button>
+        <button class="tb-btn primary" onclick="saveCurrentSection()">
+            <i class="fas fa-save"></i> Save
+            <span class="dirty-dot" id="dirty-dot"></span>
+        </button>
+        <button class="tb-btn" onclick="openGlobalDesignModal()">
+            <i class="fas fa-paint-brush"></i> Design
+        </button>
+        <button class="tb-btn" onclick="window.location.href='{{ url_for('auth.dashboard') }}'">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================
+     MAIN LAYOUT
+============================================================ -->
+<div class="ide-main">
+
+    <!-- ===== LEFT SIDEBAR ===== -->
+    <div class="ide-sidebar">
+
+        <!-- FIX #6: Three-tab sidebar -->
+        <div class="sidebar-tabs">
+            <div class="sidebar-tab active" id="tab-pages"  onclick="switchSidebarTab('pages')">
+                <i class="fas fa-sitemap"></i><br>Pages
+            </div>
+            <div class="sidebar-tab" id="tab-files" onclick="switchSidebarTab('files')">
+                <i class="fas fa-folder"></i><br>Files
+            </div>
+            <div class="sidebar-tab" id="tab-assets" onclick="switchSidebarTab('assets')">
+                <i class="fas fa-image"></i><br>Assets
+            </div>
+        </div>
+
+        <!-- PAGES PANEL -->
+        <div class="sidebar-panel active" id="panel-pages">
+            <div class="sidebar-header">
+                <span><i class="fas fa-sitemap"></i> Pages</span>
+                <button onclick="openAddPageModal()" title="Add Page"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="page-tree" id="page-tree"></div>
+        </div>
+
+        <!-- FILES PANEL (FIX #6) -->
+        <div class="sidebar-panel" id="panel-files">
+            <div class="sidebar-header">
+                <span><i class="fas fa-folder-open"></i> Files</span>
+                <button onclick="openNewFileModal()" title="New File"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="file-tree" id="file-tree"></div>
+        </div>
+
+        <!-- ASSETS PANEL -->
+        <div class="sidebar-panel" id="panel-assets">
+            <div class="sidebar-header"><span><i class="fas fa-image"></i> Assets</span></div>
+            <div style="padding:18px;color:var(--text-muted);font-size:0.78rem;text-align:center;margin-top:18px;">
+                <i class="fas fa-cloud-upload-alt" style="font-size:1.8rem;margin-bottom:8px;display:block;"></i>
+                Asset management coming soon.
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CENTER: PREVIEW ===== -->
+    <div class="ide-center" id="preview-panel">
+        <div class="preview-bar">
+            <div class="dot-group">
+                <div class="d r"></div><div class="d y"></div><div class="d g"></div>
+            </div>
+            <div class="url-bar" id="url-bar">neuraforge.local/{{ website.name|lower|replace(' ','-') }}</div>
+            <div class="vt-group">
+                <button class="vt-btn" onclick="setResponsive('mobile')" title="Mobile">📱</button>
+                <button class="vt-btn" onclick="setResponsive('tablet')" title="Tablet">📋</button>
+                <button class="vt-btn" onclick="setResponsive('desktop')" title="Desktop">🖥️</button>
+            </div>
+            <div class="vt-group" style="margin-left:4px;">
+                <button class="vt-btn active" onclick="setView('split')"   id="vt-split">Split</button>
+                <button class="vt-btn"        onclick="setView('preview')" id="vt-preview">Preview</button>
+                <button class="vt-btn"        onclick="setView('code')"    id="vt-code">Code</button>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <!-- FIX #5: improved sandbox — allow-scripts + allow-forms -->
+            <iframe id="preview-frame" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
+
+            <!-- INLINE AI EDIT BAR -->
+            <div id="inline-ai-bar">
+                <div class="ai-icon"><i class="fas fa-magic"></i></div>
+                <input type="text" id="inlineAiPrompt"
+                       placeholder="Ask AI to modify this section…"
+                       onkeypress="if(event.key==='Enter')runInlineAi()">
+                <button onclick="runInlineAi()" id="inlineAiBtn" class="tb-btn primary" style="padding:5px 13px;">
+                    Generate
+                </button>
+                <button onclick="closeInlineAi()"
+                        style="background:transparent;color:var(--text-muted);border:none;padding:4px;cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== RIGHT: CODE EDITOR + TERMINAL ===== -->
+    <div class="ide-editor" id="editor-panel">
+        <div class="editor-header">
+            <div class="editor-tab">
+                <i class="fas fa-code"></i>
+                <span id="editor-tab-name">Select a section</span>
+            </div>
+            <div class="editor-actions">
+                <button class="tb-btn" onclick="saveSnapshot()" style="padding:2px 7px;font-size:0.67rem;" title="Save Version">
+                    <i class="fas fa-history"></i>
+                </button>
+                <button class="tb-btn" onclick="showHistory()" style="padding:2px 7px;font-size:0.67rem;" title="Version History">
+                    <i class="fas fa-clock-rotate-left"></i>
+                </button>
+                <button class="tb-btn" onclick="openRegenerateModal()" style="padding:2px 7px;font-size:0.67rem;">
+                    <i class="fas fa-magic"></i> AI Regen
+                </button>
+            </div>
+        </div>
+
+        <!-- CodeMirror mounts here -->
+        <div id="code-editor-container"></div>
+
+        <!-- TERMINAL PANEL (FIX #7) -->
+        <div class="terminal-panel" id="terminal-panel">
+            <div class="terminal-header" onclick="toggleTerminal()">
+                <span class="t-title">
+                    <i class="fas fa-terminal"></i>
+                    Terminal
+                    <span id="terminal-status" class="badge"
+                          style="background:rgba(16,185,129,0.12);color:#10b981;border-color:rgba(16,185,129,0.3);">
+                        ready
+                    </span>
+                </span>
+                <div class="t-actions" onclick="event.stopPropagation()">
+                    <button onclick="clearTerminal()" title="Clear"><i class="fas fa-trash"></i></button>
+                    <button onclick="toggleTerminal()" title="Toggle">
+                        <i class="fas fa-chevron-down" id="term-chevron"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="terminal-output">
+                <p class="t-line sys">NeuraForge Terminal — ready.</p>
+                <p class="t-line sys">Press <span style="color:#a78bfa;">Run</span> or <span style="color:#a78bfa;">Ctrl+Enter</span> to execute.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- Add Page -->
+<div class="modal-overlay" id="addPageModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-file-alt" style="color:var(--accent);"></i> Add New Page</h3>
+        <input type="text" id="newPageName" placeholder="Page name (e.g. About, Gallery)">
+        <div class="btn-row">
+            <button class="tb-btn" onclick="closeModal('addPageModal')">Cancel</button>
+            <button class="tb-btn primary" onclick="addPage()">Create Page</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Website -->
+<div class="modal-overlay" id="renameWebsiteModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-pen" style="color:var(--accent);"></i> Rename Website</h3>
+        <input type="text" id="newWebsiteName" value="{{ website.name }}">
+        <div class="btn-row">
+            <button class="tb-btn" onclick="closeModal('renameWebsiteModal')">Cancel</button>
+            <button class="tb-btn primary" onclick="renameWebsite()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Page -->
+<div class="modal-overlay" id="renamePageModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-pen" style="color:var(--accent);"></i> Rename Page</h3>
+        <input type="text" id="renamePageInput" placeholder="New page name">
+        <input type="hidden" id="renamePageId">
+        <div class="btn-row">
+            <button class="tb-btn" onclick="closeModal('renamePageModal')">Cancel</button>
+            <button class="tb-btn primary" onclick="renamePage()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- New File (FIX #6) -->
+<div class="modal-overlay" id="newFileModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-file-code" style="color:var(--accent);"></i> New Project File</h3>
+        <input type="text" id="newFileName" placeholder="e.g. style.css, script.js, theme.css">
+        <div class="btn-row">
+            <button class="tb-btn" onclick="closeModal('newFileModal')">Cancel</button>
+            <button class="tb-btn primary" onclick="createNewFile()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- AI Regenerate Section -->
+<div class="modal-overlay" id="regenerateModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-magic" style="color:#a78bfa;"></i> AI Regenerate Section</h3>
+        <p style="color:var(--text-sub);font-size:0.82rem;margin-bottom:10px;">
+            Describe how to change this section. AI will rewrite the HTML.
+        </p>
+        <textarea id="regeneratePrompt" rows="3"
+                  placeholder="e.g. Make it more modern with a gradient background and bigger text"></textarea>
+        <div class="btn-row">
+            <button class="tb-btn" onclick="closeModal('regenerateModal')">Cancel</button>
+            <button class="tb-btn primary" onclick="regenerateSection()" id="regenBtn">
+                <i class="fas fa-wand-magic-sparkles"></i> Regenerate
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="modal-overlay" id="confirmDeleteModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-trash" style="color:#f87171;"></i> Confirm Delete</h3>
+        <p style="color:var(--text-sub);font-size:0.82rem;margin-bottom:14px;" id="deleteConfirmMsg">
+            Are you sure you want to delete this?
+        </p>
+        <input type="hidden" id="deleteType">
+        <input type="hidden" id="deleteId">
+        <div class="btn-row">
+            <button class="tb-btn" onclick="closeModal('confirmDeleteModal')">Cancel</button>
+            <button class="tb-btn danger" onclick="confirmDelete()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- SEO Modal -->
+<div class="modal-overlay" id="seoModal">
+    <div class="modal-box" style="max-width:560px;">
+        <h3><i class="fas fa-search" style="color:var(--success);"></i> SEO Analysis</h3>
+        <div id="seo-results" style="color:var(--text-sub);font-size:0.84rem;">Analyzing…</div>
+        <div class="btn-row"><button class="tb-btn" onclick="closeModal('seoModal')">Close</button></div>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal-overlay" id="historyModal">
+    <div class="modal-box" style="max-width:480px;">
+        <h3><i class="fas fa-clock-rotate-left" style="color:#a78bfa;"></i> Version History</h3>
+        <div id="history-list" style="max-height:280px;overflow-y:auto;"></div>
+        <div class="btn-row"><button class="tb-btn" onclick="closeModal('historyModal')">Close</button></div>
+    </div>
+</div>
+
+<!-- Deploy Modal -->
+<div class="modal-overlay" id="deployModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-rocket" style="color:var(--accent);"></i> Deploy Website</h3>
+        <div id="deploy-info"></div>
+        <div class="btn-row"><button class="tb-btn" onclick="closeModal('deployModal')">Close</button></div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareModal">
+    <div class="modal-box" style="max-width:500px;">
+        <h3><i class="fas fa-share-alt" style="color:var(--success);"></i> Share Website</h3>
+        <div style="display:flex;gap:7px;margin-bottom:10px;">
+            <input type="email" id="shareEmail" placeholder="collaborator@email.com" style="flex:1;">
+            <select id="sharePermission" style="padding:8px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:var(--text-primary);font-size:0.82rem;">
+                <option value="view">View</option>
+                <option value="edit">Edit</option>
+            </select>
+            <button class="tb-btn primary" onclick="shareWebsite()">Share</button>
+        </div>
+        <div id="collaborator-list" style="max-height:180px;overflow-y:auto;"></div>
+        <div class="btn-row"><button class="tb-btn" onclick="closeModal('shareModal')">Close</button></div>
+    </div>
+</div>
+
+<!-- Global Design Modal -->
+<div class="modal-overlay" id="designModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-paint-brush" style="color:#fce7f3;"></i> Global Design</h3>
+        <p style="color:var(--text-sub);font-size:0.82rem;margin-bottom:10px;">
+            CSS variables applied to the live preview.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:0.78rem;color:var(--text-sub);">Primary Color</label>
+            <input type="color" id="designPrimaryColor" value="#6366f1" onchange="updateGlobalDesign()"
+                   style="padding:0;background:none;border:none;width:100%;height:30px;cursor:pointer;">
+            <label style="font-size:0.78rem;color:var(--text-sub);margin-top:6px;">Border Radius (px)</label>
+            <input type="number" id="designBorderRadius" value="8" onchange="updateGlobalDesign()">
+        </div>
+        <div class="btn-row"><button class="tb-btn" onclick="closeModal('designModal')">Close</button></div>
+    </div>
+</div>
+
+<!-- Component Library Slide-in -->
+<div id="component-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="font-family:Outfit;font-size:0.93rem;color:var(--text-primary);">
+            <i class="fas fa-puzzle-piece" style="color:var(--accent);"></i> Components
+        </h3>
+        <button onclick="toggleComponentPanel()" style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-size:1.1rem;">✕</button>
+    </div>
+    <div id="component-list"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- AI CHATBOT -->
+<div id="ai-chat-widget">
+    <div id="ai-chat-header" onclick="toggleChat()">
+        <span>✨ AI Assistant</span>
+        <span id="chat-toggle-icon">▲</span>
+    </div>
+    <div id="ai-chat-body">
+        <div id="ai-chat-messages">
+            <div class="msg msg-ai">
+                Hello! I'm your AI code advisor 💡<br>
+                I can edit sections, fix bugs, add CSS animations, and more. Just ask!
+            </div>
+        </div>
+        <div id="ai-chat-input-wrapper">
+            <input type="text" id="ai-chat-input"
+                   placeholder="Ask for code or edits…"
+                   onkeypress="if(event.key==='Enter')sendChat()">
+            <button onclick="sendChat()">Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+/* ============================================================
+   STATE
+============================================================ */
+const WEBSITE_ID = {{ website.id }};
+let siteData      = null;   // Full website JSON
+let activePage    = null;   // Current page object
+let activeSection = null;   // Current section object
+let activeFile    = null;   // Currently open project file { path, content }
+let editor        = null;   // CodeMirror instance
+let isDirty       = false;
+
+// Preview optimisation
+let previewDebounceTimer = null;
+let previewRafId         = null;
+let isPreviewSyncing     = false;
+
+// Terminal
+let terminalCollapsed = false;
+
+// Component panel
+let componentPanelOpen = false;
+
+// FIX #3: CSS cache (invalidated on file edits)
+let cssCache = null;
+
+/* ============================================================
+   FIX #1 — AUTOMATIC EDITOR MODE DETECTION
+   Maps file extension to the correct CodeMirror mode.
+   Called every time a file/section is opened in the editor.
+============================================================ */
+const EXT_MODE_MAP = {
+    html : 'htmlmixed',
+    htm  : 'htmlmixed',
+    js   : 'javascript',
+    mjs  : 'javascript',
+    json : 'javascript',
+    css  : 'css',
+    scss : 'css',
+    py   : 'python',
+    sql  : 'sql',
+    md   : 'markdown',
+    txt  : 'null',
+};
+
+/**
+ * Detects language from filename extension and sets the CodeMirror mode.
+ * @param {string} filename  e.g. "style.css", "hero-section.html", "main.py"
+ */
+function setEditorMode(filename) {
+    if (!editor || !filename) return;
+    const ext  = filename.split('.').pop().toLowerCase();
+    const mode = EXT_MODE_MAP[ext] || 'htmlmixed';
+    editor.setOption('mode', mode);
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+async function init() {
+    // ── Init CodeMirror ──────────────────────────────────────
+    editor = CodeMirror(document.getElementById('code-editor-container'), {
+        value             : '<!-- Select a section or file to edit -->',
+        mode              : 'htmlmixed',
+        theme             : 'material-darker',
+        lineNumbers       : true,
+        lineWrapping      : true,
+        tabSize           : 2,
+        indentWithTabs    : false,
+        autoCloseTags     : true,
+        matchBrackets     : true,
+        autoCloseBrackets : true,
+        // FIX #2 — delegate undo/redo to CodeMirror's built-in system
+        // via extraKeys; removes the broken custom stack entirely.
+        extraKeys : {
+            'Ctrl-Z'       : cm => cm.undo(),
+            'Cmd-Z'        : cm => cm.undo(),
+            'Ctrl-Y'       : cm => cm.redo(),
+            'Cmd-Y'        : cm => cm.redo(),
+            'Ctrl-Shift-Z' : cm => cm.redo(),
+            'Cmd-Shift-Z'  : cm => cm.redo(),
+            'Ctrl-S'       : () => saveCurrentSection(),
+            'Cmd-S'        : () => saveCurrentSection(),
+            'Ctrl-Enter'   : () => runCode(),
+            'Cmd-Enter'    : () => runCode(),
+        },
+    });
+
+    // Debounced live preview sync on editor change
+    editor.on('change', () => {
+        setDirty(true);
+
+        // Sync active section
+        if (activeSection && !isPreviewSyncing) {
+            clearTimeout(previewDebounceTimer);
+            previewDebounceTimer = setTimeout(() => {
+                activeSection.content = editor.getValue();
+                schedulePreviewUpdate(); // FIX #4: use RAF
+            }, 420);
+        }
+
+        // Sync active project file (CSS/JS/etc.)
+        if (activeFile && !isPreviewSyncing) {
+            clearTimeout(previewDebounceTimer);
+            previewDebounceTimer = setTimeout(() => {
+                activeFile.content = editor.getValue();
+                cssCache = null;          // FIX #3: invalidate CSS cache
+                schedulePreviewUpdate();
+            }, 420);
+        }
+    });
+
+    await loadWebsiteData();
+}
+
+/* ── Dirty indicator ─────────────────────────────────────── */
+function setDirty(val) {
+    isDirty = val;
+    document.getElementById('dirty-dot')?.classList.toggle('visible', val);
+}
+
+/* ============================================================
+   LOAD DATA
+============================================================ */
+async function loadWebsiteData() {
+    try {
+        const res = await fetch(`/website/api/website/${WEBSITE_ID}/data`);
+        siteData  = await res.json();
+        renderPageTree();
+        renderFileTree(); // FIX #6
+        // Auto-select first page/section
+        if (siteData.pages?.length) {
+            selectPage(siteData.pages[0].id);
+            if (siteData.pages[0].sections?.length) {
+                selectSection(siteData.pages[0].sections[0].id);
+            }
+        }
+    } catch (e) {
+        termPrint('Failed to load website data: ' + e.message, 'err');
+    }
+}
+
+/* ============================================================
+   FIX #6 — SIDEBAR TAB SWITCHING
+============================================================ */
+function switchSidebarTab(tab) {
+    ['pages', 'files', 'assets'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active',   t === tab);
+        document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+    });
+}
+
+/* ============================================================
+   PAGE TREE RENDERING
+============================================================ */
+function renderPageTree() {
+    const tree = document.getElementById('page-tree');
+    tree.innerHTML = '';
+
+    (siteData?.pages || []).forEach(page => {
+        const isActivePage = activePage?.id === page.id;
+        const el = document.createElement('div');
+        el.className = `page-item${isActivePage ? ' active' : ''}`;
+        el.id = `page-${page.id}`;
+
+        const sorted = [...(page.sections || [])].sort((a, b) => a.order - b.order);
+
+        const sectionsHTML = sorted.map(sec => {
+            const isActiveSec = activeSection?.id === sec.id;
+            return `
+            <div class="section-item${isActiveSec ? ' active' : ''}"
+                 onclick="selectSection(${sec.id})" id="sec-${sec.id}">
+                <div class="dot"></div>
+                <span class="sec-name">${escHtml(sec.name)}</span>
+                <div class="sec-actions">
+                    <button onclick="event.stopPropagation();
+                                     openDeleteModal('section',${sec.id},'${escHtml(sec.name)}')"
+                            title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+        el.innerHTML = `
+            <div class="page-header" onclick="selectPage(${page.id})">
+                <span class="icon"><i class="fas fa-file-code"></i></span>
+                <span class="name">${escHtml(page.name)}</span>
+                <div class="actions">
+                    <button class="edit-btn"
+                            onclick="event.stopPropagation();openRenamePageModal(${page.id},'${escHtml(page.name)}')"
+                            title="Rename"><i class="fas fa-pen"></i></button>
+                    <button onclick="event.stopPropagation();openDeleteModal('page',${page.id},'${escHtml(page.name)}')"
+                            title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="section-list" id="section-list-${page.id}">${sectionsHTML}</div>
+            <div>
+                <button class="add-section-btn" onclick="addSection(${page.id})">
+                    <i class="fas fa-plus"></i> Add Section
+                </button>
+            </div>`;
+
+        tree.appendChild(el);
+
+        // Drag-to-reorder sections
+        const sortableList = document.getElementById(`section-list-${page.id}`);
+        if (sortableList) {
+            new Sortable(sortableList, {
+                animation  : 150,
+                ghostClass : 'sortable-ghost',
+                onEnd(evt) {
+                    const secId   = parseInt(evt.item.id.split('-')[1]);
+                    const pageObj = siteData.pages.find(p => p.id === page.id);
+                    if (!pageObj) return;
+                    const sec = pageObj.sections.find(s => s.id === secId);
+                    if (!sec) return;
+                    pageObj.sections = pageObj.sections.filter(s => s.id !== secId);
+                    pageObj.sections.splice(evt.newIndex, 0, sec);
+                    pageObj.sections.forEach((s, i) => s.order = i);
+                    fetch(`/website/api/section/${secId}/reorder`, {
+                        method  : 'PUT',
+                        headers : { 'Content-Type': 'application/json' },
+                        body    : JSON.stringify({ order: evt.newIndex }),
+                    });
+                    schedulePreviewUpdate();
+                },
+            });
+        }
+    });
+}
+
+/* ============================================================
+   FIX #6 — FILE EXPLORER
+============================================================ */
+const EXT_ICON_MAP = {
+    css  : { icon: 'fab fa-css3-alt',   color: '#60a5fa' },
+    scss : { icon: 'fab fa-sass',        color: '#f472b6' },
+    js   : { icon: 'fab fa-js',          color: '#fbbf24' },
+    mjs  : { icon: 'fab fa-js',          color: '#fbbf24' },
+    json : { icon: 'fas fa-code',        color: '#34d399' },
+    html : { icon: 'fab fa-html5',       color: '#f87171' },
+    htm  : { icon: 'fab fa-html5',       color: '#f87171' },
+    py   : { icon: 'fab fa-python',      color: '#a78bfa' },
+    md   : { icon: 'fas fa-file-alt',    color: '#94a3b8' },
+    sql  : { icon: 'fas fa-database',    color: '#38bdf8' },
+};
+
+function fileIconInfo(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    return EXT_ICON_MAP[ext] || { icon: 'fas fa-file-code', color: '#94a3b8' };
+}
+
+function renderFileTree() {
+    const tree  = document.getElementById('file-tree');
+    const files = siteData?.project_files || [];
+    tree.innerHTML = '';
+
+    if (!files.length) {
+        tree.innerHTML = `
+            <div style="padding:18px;color:var(--text-muted);font-size:0.77rem;text-align:center;margin-top:16px;">
+                <i class="fas fa-folder-open" style="font-size:1.7rem;margin-bottom:7px;display:block;"></i>
+                No project files yet.<br>Click + to create one.
+            </div>`;
+        return;
+    }
+
+    // Group files by type
+    const groups = {
+        Stylesheets : files.filter(f => /\.(css|scss)$/.test(f.path)),
+        Scripts     : files.filter(f => /\.(js|mjs|json)$/.test(f.path)),
+        Other       : files.filter(f => !/\.(css|scss|js|mjs|json)$/.test(f.path)),
+    };
+
+    Object.entries(groups).forEach(([groupName, groupFiles]) => {
+        if (!groupFiles.length) return;
+        const hdr = document.createElement('div');
+        hdr.className = 'file-group-header';
+        hdr.textContent = groupName;
+        tree.appendChild(hdr);
+
+        groupFiles.forEach(file => {
+            const { icon, color } = fileIconInfo(file.path);
+            const isActive = activeFile?.path === file.path;
+            const item = document.createElement('div');
+            item.className = `file-item${isActive ? ' active' : ''}`;
+            item.innerHTML = `
+                <i class="${icon}" style="color:${color};"></i>
+                <span class="file-name" title="${escHtml(file.path)}">${escHtml(file.path)}</span>
+                <div class="file-actions">
+                    <button onclick="event.stopPropagation();deleteProjectFile('${escHtml(file.path)}')"
+                            title="Delete"><i class="fas fa-trash"></i></button>
+                </div>`;
+            item.onclick = () => openProjectFile(file.path);
+            tree.appendChild(item);
+        });
+    });
+}
+
+/**
+ * Opens a project file in the editor with correct syntax highlighting.
+ * FIX #1: calls setEditorMode().
+ */
+function openProjectFile(filePath) {
+    const file = (siteData?.project_files || []).find(f => f.path === filePath);
+    if (!file) return;
+
+    activeSection = null;
+    activeFile    = file;
+
+    isPreviewSyncing = true;
+    editor.setValue(file.content || '');
+    setEditorMode(file.path);   // FIX #1
+    isPreviewSyncing = false;
+
+    setDirty(false);
+    document.getElementById('editor-tab-name').textContent = file.path;
+    renderFileTree();
+    cssCache = null;
+    editor.refresh();
+}
+
+function openNewFileModal() {
+    document.getElementById('newFileName').value = '';
+    openModal('newFileModal');
+}
+
+async function createNewFile() {
+    const name = document.getElementById('newFileName').value.trim();
+    if (!name) return toast('File name is required', 'error');
+    if (!siteData.project_files) siteData.project_files = [];
+    if (siteData.project_files.find(f => f.path === name)) return toast('File already exists', 'error');
+
+    const newFile = { path: name, content: getFileTemplate(name) };
+    siteData.project_files.push(newFile);
+    renderFileTree();
+    openProjectFile(name);
+    closeModal('newFileModal');
+    toast(`${name} created!`, 'success');
+
+    // Persist
+    fetch(`/website/api/website/${WEBSITE_ID}/file`, {
+        method  : 'POST',
+        headers : { 'Content-Type': 'application/json' },
+        body    : JSON.stringify({ path: name, content: newFile.content }),
+    }).catch(() => {});
+}
+
+async function deleteProjectFile(filePath) {
+    if (!confirm(`Delete "${filePath}"?`)) return;
+    siteData.project_files = (siteData.project_files || []).filter(f => f.path !== filePath);
+    if (activeFile?.path === filePath) {
+        activeFile = null;
+        editor.setValue('<!-- File deleted -->');
+        document.getElementById('editor-tab-name').textContent = 'Select a section';
+    }
+    cssCache = null;
+    renderFileTree();
+    schedulePreviewUpdate();
+    toast(`${filePath} deleted`, 'success');
+    fetch(`/website/api/website/${WEBSITE_ID}/file`, {
+        method  : 'DELETE',
+        headers : { 'Content-Type': 'application/json' },
+        body    : JSON.stringify({ path: filePath }),
+    }).catch(() => {});
+}
+
+function getFileTemplate(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    if (ext === 'css')  return `/* ${filename} */\n\nbody {\n  /* global styles */\n}\n`;
+    if (ext === 'scss') return `// ${filename}\n\n$primary: #6366f1;\n\nbody {\n}\n`;
+    if (ext === 'js')   return `// ${filename}\n\ndocument.addEventListener('DOMContentLoaded', () => {\n  // your code\n});\n`;
+    if (ext === 'json') return `{\n  "name": "project"\n}\n`;
+    if (ext === 'py')   return `# ${filename}\n\ndef main():\n    print("Hello from NeuraForge")\n\nif __name__ == "__main__":\n    main()\n`;
+    return '';
+}
+
+/* ============================================================
+   SELECTION — PAGE & SECTION
+============================================================ */
+function selectPage(pageId) {
+    activePage = siteData.pages.find(p => p.id === pageId);
+    if (!activePage) return;
+    renderPageTree();
+    schedulePreviewUpdate(); // FIX #4
+    document.getElementById('url-bar').textContent =
+        `neuraforge.local/${(siteData.name || '').toLowerCase().replace(/\s/g, '-')}/${activePage.slug || ''}`;
+}
+
+function selectSection(sectionId) {
+    for (const page of (siteData?.pages || [])) {
+        const sec = page.sections.find(s => s.id === sectionId);
+        if (!sec) continue;
+        if (!activePage || activePage.id !== page.id) activePage = page;
+        activeSection = sec;
+        activeFile    = null;
+        break;
+    }
+    if (!activeSection) return;
+
+    renderPageTree();
+    schedulePreviewUpdate(); // FIX #4
+
+    isPreviewSyncing = true;
+    editor.setValue(activeSection.content || '');
+    setEditorMode(activeSection.name + '.html'); // FIX #1: sections are HTML
+    isPreviewSyncing = false;
+
+    setDirty(false);
+    document.getElementById('editor-tab-name').textContent = activeSection.name;
+    openInlineAi();
+    editor.refresh();
+}
+
+/* ============================================================
+   FIX #3 — CSS INJECTION INTO PREVIEW
+   Collects CSS from siteData.project_files and caches it.
+   The preview HTML includes a <style> block with this CSS.
+============================================================ */
+/**
+ * Builds aggregated CSS from all .css / .scss project files.
+ * Result is cached; set cssCache = null to invalidate.
+ * @returns {string}
+ */
+function buildCss() {
+    if (cssCache !== null) return cssCache;
+    if (!siteData?.project_files) return (cssCache = '');
+    cssCache = siteData.project_files
+        .filter(f => f.path.endsWith('.css') || f.path.endsWith('.scss'))
+        .map(f => `/* ===== ${escHtml(f.path)} ===== */\n${f.content || ''}`)
+        .join('\n\n');
+    return cssCache;
+}
+
+/* ============================================================
+   FIX #4 — OPTIMIZED PREVIEW RENDERING
+   schedulePreviewUpdate() batches rebuilds via requestAnimationFrame,
+   preventing redundant DOM writes when many changes happen at once.
+============================================================ */
+/**
+ * Schedules a preview rebuild. Cancels any pending frame first.
+ */
+function schedulePreviewUpdate() {
+    if (previewRafId) cancelAnimationFrame(previewRafId);
+    previewRafId = requestAnimationFrame(updatePreview);
+}
+
+/**
+ * Rebuilds the preview iframe from current page sections.
+ * Includes: project CSS (FIX #3), global design vars, section wrappers.
+ */
+function updatePreview() {
+    previewRafId = null;
+    if (!activePage) return;
+
+    const primaryColor   = document.getElementById('designPrimaryColor')?.value || '#6366f1';
+    const borderRadius   = document.getElementById('designBorderRadius')?.value || '8';
+    const sortedSections = [...(activePage.sections || [])].sort((a, b) => a.order - b.order);
+
+    // FIX #3: inject project CSS via buildCss()
+    const projectCss = buildCss();
+
+    let html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.tailwindcss.com"><\/script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Global design variables */
+:root { --primary-color: ${primaryColor}; --radius: ${borderRadius}px; }
+body  { font-family: 'Inter', sans-serif; margin: 0; }
+
+/* Section hover/select overlay */
+.sec-wrapper { position: relative; cursor: pointer; transition: outline 0.15s; }
+.sec-wrapper:hover { outline: 2px solid #6366f1; outline-offset: -2px; }
+.sec-wrapper.active { outline: 2px dashed #6366f1; outline-offset: -2px; }
+.sec-toolbar {
+    display: none; position: absolute; top: 0; right: 0;
+    background: #6366f1; color: white;
+    border-bottom-left-radius: 6px; z-index: 1000; padding: 3px; gap: 3px;
+}
+.sec-wrapper:hover .sec-toolbar,
+.sec-wrapper.active .sec-toolbar { display: flex; }
+.sec-toolbar button {
+    background: rgba(0,0,0,0.2); border: none; color: white;
+    border-radius: 4px; padding: 3px 7px; cursor: pointer; font-size: 11px;
+}
+.sec-toolbar button:hover { background: rgba(0,0,0,0.45); }
+
+/* FIX #3 — Injected project CSS files */
+${projectCss}
+</style>
+</head>
+<body>`;
+
+    sortedSections.forEach(sec => {
+        const activeClass = activeSection?.id === sec.id ? 'active' : '';
+        html += `
+<div class="sec-wrapper ${activeClass}">
+    <div class="sec-toolbar">
+        <button onclick="window.parent.selectSection(${sec.id})" title="Edit">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+    </div>
+    <div onclick="window.parent.selectSection(${sec.id})">${sec.content || ''}</div>
+</div>`;
+    });
+
+    html += '</body></html>';
+    document.getElementById('preview-frame').srcdoc = html;
+}
+
+/* ============================================================
+   FIX #7 — TERMINAL
+============================================================ */
+function termPrint(text, type = '') {
+    const out = document.getElementById('terminal-output');
+    if (!out) return;
+    const p = document.createElement('p');
+    p.className = `t-line ${type}`;
+    p.innerHTML = text;
+    out.appendChild(p);
+    out.scrollTop = out.scrollHeight;
+}
+
+function clearTerminal() {
+    const out = document.getElementById('terminal-output');
+    if (out) out.innerHTML = '';
+    termPrint('Terminal cleared.', 'sys');
+}
+
+function toggleTerminal() {
+    terminalCollapsed = !terminalCollapsed;
+    document.getElementById('terminal-panel').classList.toggle('collapsed', terminalCollapsed);
+    const ch = document.getElementById('term-chevron');
+    if (ch) ch.className = terminalCollapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    setTimeout(() => editor?.refresh(), 280);
+}
+
+/**
+ * Runs code in the editor.
+ * Python/SQL → backend /api/code/execute → output in terminal.
+ * HTML/CSS/JS → refresh preview inline.
+ */
+async function runCode() {
+    const code     = editor.getValue();
+    const filename = activeFile?.path || (activeSection?.name + '.html') || 'main.py';
+    const ext      = filename.split('.').pop().toLowerCase();
+
+    if (terminalCollapsed) toggleTerminal();
+
+    if (ext === 'py' || ext === 'sql') {
+        const badge = document.getElementById('terminal-status');
+        if (badge) { badge.textContent = 'running…'; badge.style.color = '#fbbf24'; badge.style.borderColor = 'rgba(251,191,36,0.3)'; }
+        termPrint(`<span class="t-prompt">▶</span> Running <strong>${escHtml(filename)}</strong>…`, 'info');
+
+        try {
+            const res  = await fetch('/api/code/execute', {
+                method  : 'POST',
+                headers : { 'Content-Type': 'application/json' },
+                body    : JSON.stringify({
+                    user_id  : parseInt("{{ session.get('user_id', 1) }}", 10),
+                    filename : filename,
+                    code     : code,
+                }),
+            });
+            const data = await res.json();
+            if (data.output) data.output.split('\n').forEach(l => termPrint(escHtml(l)));
+            if (data.error)  data.error.split('\n').forEach(l => termPrint(escHtml(l), 'err'));
+            if (!data.output && !data.error) termPrint('(no output)', 'sys');
+
+            if (badge) { badge.textContent = 'ready'; badge.style.color = '#10b981'; badge.style.borderColor = 'rgba(16,185,129,0.3)'; }
+        } catch(e) {
+            termPrint('Execution error: ' + e.message, 'err');
+            if (badge) { badge.textContent = 'error'; badge.style.color = '#f87171'; badge.style.borderColor = 'rgba(239,68,68,0.3)'; }
+        }
+    } else {
+        // Frontend code — just refresh preview
+        if (activeSection) activeSection.content = code;
+        termPrint(`<span class="t-prompt">▶</span> Preview refreshed for <strong>${escHtml(filename)}</strong>.`, 'info');
+        schedulePreviewUpdate();
+    }
+}
+
+/* ============================================================
+   INLINE AI BAR
+============================================================ */
+function openInlineAi() {
+    document.getElementById('inline-ai-bar').style.display = 'flex';
+}
+function closeInlineAi() {
+    document.getElementById('inline-ai-bar').style.display = 'none';
+}
+
+async function runInlineAi() {
+    if (!activeSection) return;
+    const prompt = document.getElementById('inlineAiPrompt').value.trim();
+    if (!prompt) return toast('Describe the changes you want', 'error');
+
+    const btn = document.getElementById('inlineAiBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled  = true;
+
+    try {
+        const res  = await fetch(`/website/api/section/${activeSection.id}/regenerate`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ prompt }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            applyAiCode(data.content);
+            closeInlineAi();
+            document.getElementById('inlineAiPrompt').value = '';
+        } else {
+            toast('Generation failed: ' + (data.error || 'Unknown'), 'error');
+        }
+    } catch(e) {
+        toast('AI generation failed', 'error');
+    } finally {
+        btn.innerHTML = 'Generate';
+        btn.disabled  = false;
+    }
+}
+
+/* ============================================================
+   SAVE
+============================================================ */
+async function saveCurrentSection() {
+    if (activeFile)    return saveCurrentFile();
+    if (!activeSection) return toast('No section selected', 'error');
+
+    const newContent      = editor.getValue();
+    activeSection.content = newContent;
+
+    try {
+        const res  = await fetch(`/website/api/section/${activeSection.id}`, {
+            method  : 'PUT',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ content: newContent }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            setDirty(false);
+            schedulePreviewUpdate();
+            await saveSnapshot();
+            toast('Section saved!', 'success');
+        } else {
+            toast('Save failed: ' + (data.error || 'Unknown'), 'error');
+        }
+    } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+}
+
+async function saveCurrentFile() {
+    if (!activeFile) return;
+    const content = editor.getValue();
+    activeFile.content = content;
+    cssCache = null;
+
+    try {
+        await fetch(`/website/api/website/${WEBSITE_ID}/file`, {
+            method  : 'PUT',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ path: activeFile.path, content }),
+        });
+        setDirty(false);
+        schedulePreviewUpdate();
+        toast(`${activeFile.path} saved!`, 'success');
+    } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+}
+
+/* ============================================================
+   PAGE CRUD
+============================================================ */
+function openAddPageModal() {
+    document.getElementById('newPageName').value = '';
+    openModal('addPageModal');
+}
+async function addPage() {
+    const name = document.getElementById('newPageName').value.trim();
+    if (!name) return toast('Page name is required', 'error');
+    try {
+        const res  = await fetch(`/website/api/page/${WEBSITE_ID}`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ name }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            siteData.pages.push(data.page);
+            selectPage(data.page.id);
+            closeModal('addPageModal');
+            toast('Page created!', 'success');
+        }
+    } catch(e) { toast('Failed to add page', 'error'); }
+}
+function openRenamePageModal(pageId, currentName) {
+    document.getElementById('renamePageInput').value = currentName;
+    document.getElementById('renamePageId').value    = pageId;
+    openModal('renamePageModal');
+}
+async function renamePage() {
+    const pageId  = document.getElementById('renamePageId').value;
+    const newName = document.getElementById('renamePageInput').value.trim();
+    if (!newName) return;
+    try {
+        const res  = await fetch(`/website/api/page/${pageId}`, {
+            method  : 'PUT',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ name: newName }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            const page = siteData.pages.find(p => p.id == pageId);
+            if (page) { page.name = newName; page.slug = newName.toLowerCase().replace(/\s+/g, '-'); }
+            renderPageTree();
+            closeModal('renamePageModal');
+            toast('Page renamed!', 'success');
+        }
+    } catch(e) { toast('Rename failed', 'error'); }
+}
+
+/* ============================================================
+   SECTION CRUD
+============================================================ */
+async function addSection(pageId) {
+    try {
+        const res  = await fetch(`/website/api/section/add/${pageId}`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ name: 'New Section' }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            const page = siteData.pages.find(p => p.id === pageId);
+            if (page) page.sections.push(data.section);
+            selectSection(data.section.id);
+            toast('Section added!', 'success');
+        }
+    } catch(e) { toast('Failed to add section', 'error'); }
+}
+
+/* ============================================================
+   DELETE
+============================================================ */
+function openDeleteModal(type, id, name) {
+    document.getElementById('deleteType').value      = type;
+    document.getElementById('deleteId').value        = id;
+    document.getElementById('deleteConfirmMsg').textContent =
+        `Are you sure you want to delete the ${type} "${name}"? This cannot be undone.`;
+    openModal('confirmDeleteModal');
+}
+async function confirmDelete() {
+    const type = document.getElementById('deleteType').value;
+    const id   = document.getElementById('deleteId').value;
+    const url  = type === 'page' ? `/website/api/page/${id}` : `/website/api/section/${id}`;
+    try {
+        const res  = await fetch(url, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            if (type === 'page') {
+                siteData.pages = siteData.pages.filter(p => p.id != id);
+                if (activePage?.id == id) { activePage = siteData.pages[0] || null; activeSection = null; }
+            } else {
+                for (const page of siteData.pages) page.sections = page.sections.filter(s => s.id != id);
+                if (activeSection?.id == id) {
+                    activeSection = null;
+                    editor.setValue('<!-- Section deleted -->');
+                }
+            }
+            renderPageTree();
+            schedulePreviewUpdate();
+            closeModal('confirmDeleteModal');
+            toast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted!`, 'success');
+        }
+    } catch(e) { toast('Delete failed', 'error'); }
+}
+
+/* ============================================================
+   WEBSITE RENAME
+============================================================ */
+function openRenameWebsiteModal() { openModal('renameWebsiteModal'); }
+async function renameWebsite() {
+    const newName = document.getElementById('newWebsiteName').value.trim();
+    if (!newName) return;
+    try {
+        const res  = await fetch(`/website/api/website/${WEBSITE_ID}`, {
+            method  : 'PUT',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ name: newName }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            siteData.name = newName;
+            document.getElementById('website-name').textContent = newName;
+            closeModal('renameWebsiteModal');
+            toast('Website renamed!', 'success');
+        }
+    } catch(e) { toast('Rename failed', 'error'); }
+}
+
+/* ============================================================
+   AI REGENERATE SECTION
+============================================================ */
+function openRegenerateModal() {
+    if (!activeSection) return toast('Select a section first', 'error');
+    document.getElementById('regeneratePrompt').value = '';
+    openModal('regenerateModal');
+}
+async function regenerateSection() {
+    if (!activeSection) return;
+    const prompt = document.getElementById('regeneratePrompt').value.trim();
+    if (!prompt) return toast('Please describe the changes', 'error');
+
+    const btn = document.getElementById('regenBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating…';
+    btn.disabled  = true;
+
+    try {
+        const res  = await fetch(`/website/api/section/${activeSection.id}/regenerate`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ prompt }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            activeSection.content = data.content;
+            isPreviewSyncing = true;
+            editor.setValue(data.content);
+            isPreviewSyncing = false;
+            schedulePreviewUpdate();
+            closeModal('regenerateModal');
+            toast('Section regenerated with AI!', 'success');
+        } else {
+            toast('Regeneration failed: ' + (data.error || 'Unknown'), 'error');
+        }
+    } catch(e) {
+        toast('AI regeneration failed', 'error');
+    } finally {
+        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+        btn.disabled  = false;
+    }
+}
+
+/* ============================================================
+   FIX #8 — AI CODE APPLICATION
+   Works for both sections and project files (CSS, JS, HTML, etc.)
+============================================================ */
+function applyAiCode(code) {
+    if (!activeSection && !activeFile) {
+        return toast('Select a section or file to update first.', 'error');
+    }
+    isPreviewSyncing = true;
+    editor.setValue(code);
+    isPreviewSyncing = false;
+
+    if (activeSection) {
+        activeSection.content = code;
+        schedulePreviewUpdate();
+        saveCurrentSection();
+    } else if (activeFile) {
+        activeFile.content = code;
+        cssCache = null;
+        schedulePreviewUpdate();
+        saveCurrentFile();
+    }
+    toast('AI code applied and saved!', 'success');
+}
+
+/* ============================================================
+   VIEW TOGGLE
+============================================================ */
+function setView(mode) {
+    const previewPanel = document.getElementById('preview-panel');
+    const editorPanel  = document.getElementById('editor-panel');
+    document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
+
+    if (mode === 'split') {
+        previewPanel.style.display = 'flex';
+        editorPanel.style.width    = '44%';
+        editorPanel.classList.remove('hidden');
+        document.getElementById('vt-split').classList.add('active');
+    } else if (mode === 'preview') {
+        previewPanel.style.display = 'flex';
+        editorPanel.classList.add('hidden');
+        document.getElementById('vt-preview').classList.add('active');
+    } else if (mode === 'code') {
+        previewPanel.style.display = 'none';
+        editorPanel.style.width    = '100%';
+        editorPanel.classList.remove('hidden');
+        document.getElementById('vt-code').classList.add('active');
+    }
+    setTimeout(() => editor?.refresh(), 320);
+}
+
+/* ============================================================
+   RESPONSIVE PREVIEW
+============================================================ */
+function setResponsive(device) {
+    const frame = document.getElementById('preview-frame');
+    const config = {
+        mobile  : { width:'375px', border:'2px solid rgba(99,102,241,0.3)', radius:'16px' },
+        tablet  : { width:'768px', border:'2px solid rgba(99,102,241,0.3)', radius:'12px' },
+        desktop : { width:'100%',  border:'none',                           radius:'' },
+    };
+    const c = config[device] || config.desktop;
+    Object.assign(frame.style, { width:c.width, margin:'auto', border:c.border, borderRadius:c.radius });
+}
+
+/* ============================================================
+   CHATBOT
+============================================================ */
+function toggleChat() {
+    const w    = document.getElementById('ai-chat-widget');
+    const icon = document.getElementById('chat-toggle-icon');
+    w.classList.toggle('open');
+    icon.textContent = w.classList.contains('open') ? '▼' : '▲';
+}
+
+async function sendChat() {
+    const input = document.getElementById('ai-chat-input');
+    const msg   = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    appendChatMsg(msg, 'user');
+
+    const typingId = 'typing-' + Date.now();
+    appendChatMsg('Thinking…', 'ai', typingId);
+
+    try {
+        const res  = await fetch('/api/chat/website', {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({
+                message    : msg,
+                user_id    : parseInt("{{ session.get('user_id', 1) }}", 10),
+                website_id : WEBSITE_ID,
+            }),
+        });
+        const data = await res.json();
+        document.getElementById(typingId)?.remove();
+        appendChatMsg(data.message || 'Error', 'ai', null, data.action);
+    } catch(e) {
+        document.getElementById(typingId)?.remove();
+        appendChatMsg('Failed to reach AI.', 'ai');
+    }
+}
+
+function appendChatMsg(text, sender, id = null, action = null) {
+    const msgs = document.getElementById('ai-chat-messages');
+    const div  = document.createElement('div');
+    div.className = 'msg msg-' + sender;
+    if (id) div.id = id;
+
+    if (sender === 'ai' && text.includes('```')) {
+        div.innerHTML = renderMarkdownCode(text);
+    } else {
+        div.textContent = text;
+    }
+
+    // Action: apply code to active section/file (FIX #8)
+    if (sender === 'ai' && action?.type === 'edit' && action.code) {
+        const key   = 'k_' + Date.now();
+        window[key] = action.code;
+        div.appendChild(mkBtn('<i class="fas fa-magic"></i> Apply to Section',
+            () => applyAiCode(window[key])));
+    }
+
+    // Action: global redesign
+    if (sender === 'ai' && action?.type === 'redesign_all' && action.code) {
+        const key   = 'k_' + Date.now();
+        window[key] = action.code;
+        div.appendChild(mkBtn('<i class="fas fa-wand-magic-sparkles"></i> Redesign Website',
+            () => applyRedesignAll(window[key]),
+            'linear-gradient(135deg,#10b981,#059669)'));
+    }
+
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+function mkBtn(html, onClick, bg = null) {
+    const btn = document.createElement('button');
+    btn.className = 'tb-btn primary';
+    Object.assign(btn.style, { marginTop:'7px', fontSize:'0.71rem', padding:'4px 9px' });
+    if (bg) btn.style.background = bg;
+    btn.innerHTML = html;
+    btn.onclick   = onClick;
+    return btn;
+}
+
+async function applyRedesignAll(prompt) {
+    toast('Starting global redesign… please wait.', 'success');
+    try {
+        const res  = await fetch(`/website/api/website/${WEBSITE_ID}/regenerate_all`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ prompt }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            toast('Redesign complete! Reloading…', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            toast('Redesign failed: ' + (data.error || 'Unknown'), 'error');
+        }
+    } catch(e) { toast('Redesign request failed', 'error'); }
+}
+
+function renderMarkdownCode(text) {
+    return text
+        .replace(/```(\w+)?\n([\s\S]*?)```/g, (m, lang, code) => {
+            const safe = escHtml(code.trim());
+            const key  = 'k_' + Math.random().toString(36).substr(2, 9);
+            window[key] = code.trim();
+            return `
+<div style="background:rgba(0,0,0,0.4);border-radius:6px;overflow:hidden;margin:6px 0;border:1px solid rgba(255,255,255,0.1);">
+  <div style="background:rgba(255,255,255,0.05);padding:3px 8px;font-size:0.7rem;color:var(--text-sub);display:flex;justify-content:space-between;align-items:center;">
+    <span>${lang || 'code'}</span>
+    <button onclick="applyAiCode(window['${key}'])"
+            style="background:var(--accent);color:white;border:none;padding:2px 7px;border-radius:4px;cursor:pointer;font-size:0.67rem;">
+      <i class="fas fa-magic"></i> Apply
+    </button>
+  </div>
+  <pre style="padding:8px;overflow-x:auto;font-size:0.76rem;font-family:'JetBrains Mono',monospace;margin:0;"><code>${safe}</code></pre>
+</div>`;
+        })
+        .replace(/`([^`]+)`/g,
+            '<code style="background:rgba(99,102,241,0.18);padding:1px 4px;border-radius:3px;font-size:0.77rem;">$1</code>')
+        .replace(/\n/g, '<br>');
+}
+
+/* ============================================================
+   SEO ANALYSIS
+============================================================ */
+async function runSEO() {
+    openModal('seoModal');
+    document.getElementById('seo-results').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing…';
+    try {
+        const res  = await fetch(`/website/api/website/${WEBSITE_ID}/seo`);
+        const data = await res.json();
+        const col  = data.score >= 70 ? '#10b981' : data.score >= 40 ? '#f59e0b' : '#ef4444';
+        let html = `<div style="margin-bottom:10px;">
+            <span style="font-size:2rem;font-weight:700;color:${col};">${data.score}</span>
+            <span style="color:var(--text-muted);">/100</span></div>`;
+        if (data.issues?.length) {
+            html += '<p style="font-weight:600;color:#f87171;margin-bottom:4px;">Issues:</p><ul style="margin-left:14px;margin-bottom:10px;">';
+            data.issues.forEach(i => html += `<li style="margin-bottom:2px;">• ${i}</li>`);
+            html += '</ul>';
+        }
+        if (data.suggestions?.length) {
+            html += '<p style="font-weight:600;color:#10b981;margin-bottom:4px;">Suggestions:</p><ul style="margin-left:14px;">';
+            data.suggestions.forEach(s => html += `<li style="margin-bottom:2px;">✓ ${s}</li>`);
+            html += '</ul>';
+        }
+        document.getElementById('seo-results').innerHTML = html;
+    } catch(e) { document.getElementById('seo-results').textContent = 'Analysis failed'; }
+}
+
+/* ============================================================
+   VERSION HISTORY
+============================================================ */
+async function saveSnapshot() {
+    if (!activeSection) return;
+    fetch(`/website/api/section/${activeSection.id}/snapshot`, { method: 'POST' }).catch(() => {});
+}
+
+async function showHistory() {
+    if (!activeSection) return toast('Select a section first', 'error');
+    openModal('historyModal');
+    try {
+        const res       = await fetch(`/website/api/section/${activeSection.id}/history`);
+        const snapshots = await res.json();
+        const list      = document.getElementById('history-list');
+        if (!snapshots.length) {
+            list.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem;">No versions saved yet.</p>';
+            return;
+        }
+        list.innerHTML = snapshots.map(s => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
+                <div>
+                    <div style="font-size:0.78rem;color:var(--text-primary);">${new Date(s.created_at).toLocaleString()}</div>
+                    <div style="font-size:0.69rem;color:var(--text-muted);">${escHtml(s.preview)}…</div>
+                </div>
+                <button class="tb-btn" style="padding:2px 7px;font-size:0.67rem;" onclick="restoreVersion(${s.id})">Restore</button>
+            </div>
+        `).join('');
+    } catch(e) { document.getElementById('history-list').textContent = 'Failed to load history'; }
+}
+
+async function restoreVersion(snapshotId) {
+    if (!activeSection) return;
+    try {
+        const res  = await fetch(`/website/api/section/${activeSection.id}/restore/${snapshotId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            activeSection.content = data.content;
+            isPreviewSyncing = true;
+            editor.setValue(data.content);
+            isPreviewSyncing = false;
+            schedulePreviewUpdate();
+            closeModal('historyModal');
+            toast('Version restored!', 'success');
+        }
+    } catch(e) { toast('Restore failed', 'error'); }
+}
+
+/* ============================================================
+   COLLABORATION
+============================================================ */
+function openShareModal() { openModal('shareModal'); loadCollaborators(); }
+
+async function loadCollaborators() {
+    try {
+        const res     = await fetch(`/website/api/website/${WEBSITE_ID}/collaborators`);
+        const collabs = await res.json();
+        const list    = document.getElementById('collaborator-list');
+        if (!collabs.length) {
+            list.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem;">No collaborators yet</p>';
+            return;
+        }
+        list.innerHTML = collabs.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:0.82rem;color:var(--text-primary);">${escHtml(c.email)}
+                    <span style="color:var(--text-muted);">(${c.permission})</span>
+                </span>
+                <button onclick="removeCollab(${c.id})"
+                        style="background:none;border:none;color:#f87171;cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>`).join('');
+    } catch(e) { /* silent */ }
+}
+
+async function shareWebsite() {
+    const email      = document.getElementById('shareEmail').value.trim();
+    const permission = document.getElementById('sharePermission').value;
+    if (!email) return toast('Enter an email', 'error');
+    try {
+        const res  = await fetch(`/website/api/website/${WEBSITE_ID}/share`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ email, permission }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('shareEmail').value = '';
+            loadCollaborators();
+            toast(`Shared with ${email}!`, 'success');
+        }
+    } catch(e) { toast('Share failed', 'error'); }
+}
+
+async function removeCollab(accessId) {
+    try {
+        await fetch(`/website/api/website/shared/${accessId}`, { method: 'DELETE' });
+        loadCollaborators();
+        toast('Collaborator removed', 'success');
+    } catch(e) { /* silent */ }
+}
+
+/* ============================================================
+   DEPLOY
+============================================================ */
+async function deployInfo() {
+    openModal('deployModal');
+    const options = [
+        { name:'Vercel',       icon:'▲', url:'https://vercel.com/new' },
+        { name:'Netlify',      icon:'🟩', url:'https://app.netlify.com/drop' },
+        { name:'GitHub Pages', icon:'🐙', url:'https://pages.github.com/' },
+    ];
+    let html = `<p style="color:var(--text-sub);font-size:0.87rem;margin-bottom:14px;">Export your ZIP and deploy to a modern hosting provider:</p>
+        <div style="display:grid;gap:7px;">`;
+    options.forEach(o => {
+        html += `
+        <a href="${o.url}" target="_blank"
+           style="display:flex;align-items:center;justify-content:space-between;padding:11px;
+                  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+                  border-radius:8px;text-decoration:none;color:var(--text-primary);transition:border-color 0.18s;"
+           onmouseover="this.style.borderColor='rgba(99,102,241,0.4)'"
+           onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <div style="display:flex;align-items:center;gap:9px;">
+                <span style="font-size:1.3rem;">${o.icon}</span>
+                <span style="font-weight:600;">${o.name}</span>
+            </div>
+            <i class="fas fa-external-link-alt" style="font-size:0.77rem;color:var(--text-muted);"></i>
+        </a>`;
+    });
+    html += `</div><p style="color:var(--warn);font-size:0.77rem;margin-top:10px;">
+        💡 Download the ZIP via the Export button first, then upload it.</p>`;
+    document.getElementById('deploy-info').innerHTML = html;
+}
+
+/* ============================================================
+   COMPONENT LIBRARY
+============================================================ */
+async function toggleComponentPanel() {
+    componentPanelOpen = !componentPanelOpen;
+    document.getElementById('component-panel').style.display = componentPanelOpen ? 'block' : 'none';
+
+    if (componentPanelOpen) {
+        try {
+            const res        = await fetch('/website/api/components');
+            const components = await res.json();
+            const list       = document.getElementById('component-list');
+            list.innerHTML   = components.map(c => `
+                <div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:8px;
+                            padding:9px;margin-bottom:7px;cursor:pointer;transition:border-color 0.15s;"
+                     onmouseover="this.style.borderColor='var(--border-accent)'"
+                     onmouseout="this.style.borderColor='var(--border)'"
+                     onclick="addComponentToPage('${c.id}')">
+                    <div style="font-size:0.81rem;font-weight:600;">${escHtml(c.name)}</div>
+                    <div style="font-size:0.69rem;color:var(--text-muted);">${escHtml(c.category)}</div>
+                </div>`).join('');
+        } catch(e) { loadFallbackComponents(); }
+    }
+}
+
+async function addComponentToPage(componentId) {
+    if (!activePage) return toast('Select a page first', 'error');
+    try {
+        const res  = await fetch(`/website/api/component/${componentId}/add/${activePage.id}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            activePage.sections.push({ id: data.section_id, name: data.name, content: data.content, order: activePage.sections.length });
+            renderPageTree();
+            schedulePreviewUpdate();
+            toast(`${data.name} added!`, 'success');
+        }
+    } catch(e) { toast('Failed to add component', 'error'); }
+}
+
+function loadFallbackComponents() {
+    const list     = document.getElementById('component-list');
+    const builtins = [
+        { name:'Modern Hero',    cat:'Hero',     html:'<section class="py-24 px-6 bg-gray-900 text-center"><h1 class="text-5xl font-bold text-white mb-6">Build Faster</h1><p class="text-gray-400 text-xl max-w-2xl mx-auto mb-8">Lorem ipsum dolor sit amet.</p><button class="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold">Get Started</button></section>' },
+        { name:'Feature Grid',   cat:'Features', html:'<section class="py-20 px-6 bg-gray-800"><div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8"><div class="p-6 bg-gray-700 rounded-xl"><h3 class="text-white font-bold mb-2">Feature 1</h3><p class="text-gray-400 text-sm">Description.</p></div><div class="p-6 bg-gray-700 rounded-xl"><h3 class="text-white font-bold mb-2">Feature 2</h3><p class="text-gray-400 text-sm">Description.</p></div><div class="p-6 bg-gray-700 rounded-xl"><h3 class="text-white font-bold mb-2">Feature 3</h3><p class="text-gray-400 text-sm">Description.</p></div></div></section>' },
+        { name:'Testimonials',   cat:'Social',   html:'<section class="py-20 px-6 bg-gray-900 text-center"><h2 class="text-3xl font-bold text-white mb-12">What they say</h2><div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8"><div class="p-8 bg-gray-800 rounded-2xl border border-gray-700">"Amazing!" — Jane D.</div><div class="p-8 bg-gray-800 rounded-2xl border border-gray-700">"Love it!" — John S.</div></div></section>' },
+        { name:'CTA Banner',     cat:'CTA',      html:'<section class="py-16 px-6 bg-indigo-700 text-center"><h2 class="text-3xl font-bold text-white mb-4">Ready to get started?</h2><button class="bg-white text-indigo-700 px-8 py-3 rounded-full font-semibold">Start Free</button></section>' },
+    ];
+    list.innerHTML = builtins.map(c => `
+        <div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:8px;
+                    padding:9px;margin-bottom:7px;cursor:pointer;transition:border-color 0.15s;"
+             onmouseover="this.style.borderColor='var(--border-accent)'"
+             onmouseout="this.style.borderColor='var(--border)'"
+             onclick="addRawComponentToPage('${btoa(c.html)}')">
+            <div style="font-size:0.81rem;font-weight:600;">${c.name}</div>
+            <div style="font-size:0.69rem;color:var(--text-muted);">${c.cat}</div>
+        </div>`).join('');
+}
+
+async function addRawComponentToPage(b64) {
+    if (!activePage) return toast('Select a page first', 'error');
+    const content = atob(b64);
+    try {
+        const res  = await fetch(`/website/api/section/add/${activePage.id}`, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({ name: 'Component', content }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            activePage.sections.push(data.section);
+            selectSection(data.section.id);
+            toast('Component added!', 'success');
+        }
+    } catch(e) { toast('Failed to add component', 'error'); }
+}
+
+/* ============================================================
+   GLOBAL DESIGN
+============================================================ */
+function openGlobalDesignModal() { openModal('designModal'); }
+function updateGlobalDesign()    { cssCache = null; schedulePreviewUpdate(); }
+
+/* ============================================================
+   MODAL UTILITIES
+============================================================ */
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// Close on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.classList.remove('active');
+    });
+});
+
+/* ============================================================
+   TOAST
+============================================================ */
+function toast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = `show ${type}`;
+    clearTimeout(t._t);
+    t._t = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
+function escHtml(s) {
+    if (typeof s !== 'string') return '';
+    return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" }[c]));
+}
+
+/* ============================================================
+   BOOT
+============================================================ */
+window.addEventListener('DOMContentLoaded', init);
+
+// Unsaved-changes warning on navigation
+window.addEventListener('beforeunload', e => {
+    if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>

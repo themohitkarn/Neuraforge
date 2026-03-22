@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuraForge — AI Website Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-elements">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+    </div>
+    
+    <nav class="navbar">
+        <div class="logo">NeuraForge</div>
+        <div class="nav-links">
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('features.template_gallery') }}">Templates</a>
+                <a href="{{ url_for('auth.pricing') }}">Pricing</a>
+                {% if session.get('role') == 'admin' or session.get('email') == 'mohitkarn123@gmail.com' %}
+                    <a href="{{ url_for('auth.dashboard') }}" style="color: #f59e0b;">
+                        <i class="fas fa-shield-alt"></i> Admin
+                    </a>
+                {% endif %}
+                <span style="color: #64748b; font-size: 0.85rem; margin-left: 0.5rem;">
+                    <i class="fas fa-coins" style="color: #f59e0b;"></i> 
+                    {{ session.get('tokens', '—') }}
+                </span>
+                <a href="{{ url_for('auth.logout') }}" class="btn-outline">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn-primary">Get Started</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

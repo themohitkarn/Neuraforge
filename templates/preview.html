@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ current_page.name }} - {{ website.name }}</title>
+    
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons & Animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS (for AI Generation) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Outfit', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        .neura-preview-toolbar {
+            position: fixed; top: 0; left: 0; width: 100%; height: 50px;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 2rem; color: white; z-index: 9999;
+            font-family: system-ui, sans-serif; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .neura-preview-toolbar a { color: #818cf8; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: color 0.2s; }
+        .neura-preview-toolbar a:hover { color: #c7d2fe; }
+        .neura-preview-content { margin-top: 50px; min-height: calc(100vh - 50px); }
+        
+        .page-nav { display: flex; gap: 1rem; }
+        .page-nav a { color: #cbd5e1; font-weight: 400; padding: 0.2rem 0.6rem; border-radius: 0.25rem; transition: background 0.2s;}
+        .page-nav a:hover { background: rgba(255,255,255,0.05); }
+        .page-nav a.active { background: rgba(255,255,255,0.1); color: white; }
+    </style>
+
+    <!-- Inject Custom AI Generated CSS -->
+    {% if website.project_files %}
+        <style>
+        {% for file in website.project_files %}
+            {% if file.path.endswith('.css') %}
+                /* File: {{ file.path }} */
+                {{ file.content|safe }}
+            {% endif %}
+        {% endfor %}
+        </style>
+    {% endif %}
+</head>
+<body>
+    <!-- Neauraforge Toolbar -->
+    <div class="neura-preview-toolbar">
+        <div style="display: flex; align-items: center; gap: 2rem;">
+            <strong>{{ website.name }}</strong>
+            <div class="page-nav">
+                {% for page in website.pages %}
+                    <a href="{{ url_for('website_bp.view_page', website_id=website.id, slug=page.slug) }}" 
+                       class="{% if page.id == current_page.id %}active{% endif %}">
+                       {{ page.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        <a href="{{ url_for('auth.dashboard') }}">&larr; Back to Dashboard</a>
+    </div>
+
+    <!-- Rendered Page Content -->
+    <div class="neura-preview-content">
+        {% for section in current_page.sections|sort(attribute='order') %}
+            <section id="section-{{ section.id }}" class="group relative">
+                {{ section.content|safe }}
+            </section>
+        {% else %}
+            <div class="flex items-center justify-center h-screen bg-gray-50 text-gray-500">
+                <p>No content generated for this page yet.</p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

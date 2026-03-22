@@ -1,0 +1,52 @@
+# Environment & Secrets
+.env
+*.env
+
+# Large files
+html_dataset.json
+*.ipynb
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Database
+instance/
+*.db
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Docker
+tmp/
+rollback/
+
+# Model weights
+*.pth
+*.pt
+*.bin
+
+# Node (if any)
+node_modules/
+package-lock.json

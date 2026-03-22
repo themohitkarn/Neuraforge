@@ -1,0 +1,334 @@
+/* Global Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f9f9f9;
+}
+
+/* Header Styles */
+.header {
+  background-color: #333;
+  color: #fff;
+  padding: 1em;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+/* Navigation Styles */
+.nav {
+  background-color: #444;
+  padding: 1em;
+  text-align: center;
+}
+
+.nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav li {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.nav a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: #ccc;
+}
+
+/* Product Styles */
+.product {
+  margin: 20px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.product img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px 10px 0 0;
+}
+
+.product h2 {
+  margin-top: 0;
+}
+
+.product p {
+  margin-bottom: 20px;
+}
+
+/* Product Grid Styles */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 20px;
+}
+
+/* AI Recommendations Styles */
+.ai-recommendations {
+  background-color: #f7f7f7;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.ai-recommendations h2 {
+  margin-top: 0;
+}
+
+.ai-recommendations ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-recommendations li {
+  margin-bottom: 10px;
+}
+
+.ai-recommendations a {
+  text-decoration: none;
+  color: #337ab7;
+}
+
+.ai-recommendations a:hover {
+  color: #23527c;
+}
+
+/* Chatbot Styles */
+.chatbot {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  background-color: #f7f7f7;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.chatbot h2 {
+  margin-top: 0;
+}
+
+.chatbot ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chatbot li {
+  margin-bottom: 10px;
+}
+
+.chatbot a {
+  text-decoration: none;
+  color: #337ab7;
+}
+
+.chatbot a:hover {
+  color: #23527c;
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #333;
+  color: #fff;
+  padding: 1em;
+  text-align: center;
+  clear: both;
+}
+
+/* Responsive Design */
+@media only screen and (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+/* AI Ecommerce Site Styles */
+.ai-ecommerce-site {
+  background-image: linear-gradient(to bottom, #f7f7f7, #fff);
+  background-size: 100% 300px;
+  background-position: 0% 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-ecommerce-site h1 {
+  font-size: 48px;
+  color: #333;
+  text-align: center;
+}
+
+.ai-ecommerce-site p {
+  font-size: 18px;
+  color: #666;
+  text-align: center;
+}/* AI Ecommerce Site Styles */
+.ai-ecommerce-site {
+  background-image: linear-gradient(to bottom, #f7f7f7, #fff);
+  background-size: 100% 300px;
+  background-position: 0% 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-ecommerce-site h1 {
+  font-size: 48px;
+  color: #333;
+  text-align: center;
+}
+
+.ai-ecommerce-site p {
+  font-size: 18px;
+  color: #666;
+  text-align: center;
+}
+
+/* AI Ecommerce Site Header */
+.ai-ecommerce-site-header {
+  background-color: #333;
+  color: #fff;
+  padding: 1em;
+  text-align: center;
+}
+
+.ai-ecommerce-site-header h1 {
+  margin: 0;
+}
+
+/* AI Ecommerce Site Navigation */
+.ai-ecommerce-site-nav {
+  background-color: #444;
+  padding: 1em;
+  text-align: center;
+}
+
+.ai-ecommerce-site-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-ecommerce-site-nav li {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.ai-ecommerce-site-nav a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.ai-ecommerce-site-nav a:hover {
+  color: #ccc;
+}
+
+/* AI Ecommerce Site Product Grid */
+.ai-ecommerce-site-product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 20px;
+}
+
+/* AI Ecommerce Site Product */
+.ai-ecommerce-site-product {
+  margin: 20px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.ai-ecommerce-site-product img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px 10px 0 0;
+}
+
+.ai-ecommerce-site-product h2 {
+  margin-top: 0;
+}
+
+.ai-ecommerce-site-product p {
+  margin-bottom: 20px;
+}
+
+/* AI Ecommerce Site Chatbot */
+.ai-ecommerce-site-chatbot {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  background-color: #f7f7f7;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.ai-ecommerce-site-chatbot h2 {
+  margin-top: 0;
+}
+
+.ai-ecommerce-site-chatbot ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-ecommerce-site-chatbot li {
+  margin-bottom: 10px;
+}
+
+.ai-ecommerce-site-chatbot a {
+  text-decoration: none;
+  color: #337ab7;
+}
+
+.ai-ecommerce-site-chatbot a:hover {
+  color: #23527c;
+}
+
+/* Responsive Design */
+@media only screen and (max-width: 768px) {
+  .ai-ecommerce-site-product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .ai-ecommerce-site-product-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}

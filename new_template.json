@@ -1,0 +1,58 @@
+{
+  "project_name": "New Project",
+  "version": "1.0",
+  "description": "This is a new project",
+  "author": "Your Name",
+  "dependencies": [],
+  "templates": [
+    {
+      "name": "main",
+      "description": "Main template",
+      "content": ""
+    }
+  ],
+  "settings": {
+    "language": "en",
+    "theme": "default"
+  }
+}{
+  "project_name": "Redesigned Project",
+  "version": "2.0",
+  "description": "This is a redesigned project with new features and improvements",
+  "author": "Your Name",
+  "dependencies": [
+    "dependency1",
+    "dependency2"
+  ],
+  "templates": [
+    {
+      "name": "main",
+      "description": "Main template",
+      "content": ""
+    },
+    {
+      "name": "about",
+      "description": "About template",
+      "content": ""
+    },
+    {
+      "name": "contact",
+      "description": "Contact template",
+      "content": ""
+    }
+  ],
+  "settings": {
+    "language": "en",
+    "theme": "dark"
+  },
+  "features": [
+    {
+      "name": "feature1",
+      "description": "Feature 1 description"
+    },
+    {
+      "name": "feature2",
+      "description": "Feature 2 description"
+    }
+  ]
+}

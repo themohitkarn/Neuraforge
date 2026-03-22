@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card auth-card">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #a78bfa); 
+                        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                        margin: 0 auto 1rem; font-size: 1.5rem;">
+                🔐
+            </div>
+            <h2>Verify Your Email</h2>
+            <p>We sent a 6-digit code to<br><strong style="color: #a78bfa;">{{ email }}</strong></p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('auth.verify_otp') }}">
+            <div class="form-group" style="text-align: center;">
+                <label for="otp">Verification Code</label>
+                <input type="text" id="otp" name="otp" required 
+                       placeholder="000000" maxlength="6"
+                       style="text-align: center; font-size: 1.8rem; letter-spacing: 8px; 
+                              font-weight: 700; font-family: 'JetBrains Mono', monospace;">
+            </div>
+            <button type="submit" class="btn-primary w-100 mt-4">Verify Email</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 1.25rem;">
+            <p style="color: #64748b; font-size: 0.85rem;">Didn't receive the code?</p>
+            <form method="POST" action="{{ url_for('auth.resend_otp') }}" style="display: inline;">
+                <button type="submit" style="background: none; border: none; color: #6366f1; 
+                        cursor: pointer; font-weight: 600; font-size: 0.9rem; padding: 4px;">
+                    Resend OTP
+                </button>
+            </form>
+        </div>
+        
+        <p class="auth-footer">
+            <a href="{{ url_for('auth.register') }}">← Back to Register</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

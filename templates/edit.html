@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit: {{ current_page.name }} - {{ website.name }}</title>
+    
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons & Animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        .neura-preview-toolbar {
+            position: fixed; top: 0; left: 0; width: 100%; height: 50px;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 2rem; color: white; z-index: 9999;
+            font-family: system-ui, sans-serif; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .neura-preview-toolbar .btn-save { 
+            background: #6366f1; color: white; padding: 0.3rem 1rem; 
+            border-radius: 4px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .neura-preview-toolbar .btn-save:hover { background: #4f46e5; }
+        .neura-preview-toolbar a { color: #818cf8; text-decoration: none; font-weight: 600; font-size: 0.9rem; margin-right: 1.5rem; transition: color 0.2s;}
+        .neura-preview-toolbar a:hover { color: #c7d2fe; }
+        .neura-preview-content { margin-top: 50px; min-height: calc(100vh - 50px); }
+        
+        .page-nav { display: flex; gap: 1rem; margin-left: 2rem; }
+        .page-nav a { color: #cbd5e1; font-weight: 400; padding: 0.2rem 0.6rem; border-radius: 0.25rem; transition: background 0.2s;}
+        .page-nav a:hover { background: rgba(255,255,255,0.05); }
+        .page-nav a.active { background: rgba(255,255,255,0.1); color: white; }
+        
+        /* Editor Styles */
+        .editable-section { position: relative; border: 2px dashed transparent; transition: all 0.2s; }
+        .editable-section:hover { border-color: #6366f1; }
+        .editable-section:hover::before {
+            content: "Edit Section"; position: absolute; top: -25px; left: -2px;
+            background: #6366f1; color: white; padding: 2px 10px; font-size: 12px;
+            font-family: sans-serif; font-weight: bold; border-radius: 4px 4px 0 0;
+            z-index: 50;
+        }
+        
+        /* ContentEditable Overrides */
+        [contenteditable]:focus { outline: 2px solid #a855f7; outline-offset: 4px; border-radius: 4px; }
+        
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: #10b981; color: #fff; text-align: center;
+            border-radius: 4px; padding: 16px; position: fixed; z-index: 10000; left: 50%; bottom: 30px;
+            transform: translateX(-50%); font-family: sans-serif;
+        }
+        #toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        /* Chatbot UI */
+        #ai-chat-widget {
+            position: fixed; bottom: 20px; right: 20px; width: 320px;
+            background: rgba(15, 23, 42, 0.95); border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif;
+            z-index: 9999; backdrop-filter: blur(10px); color: white;
+            transition: height 0.3s; height: 40px; /* Collapsed by default */
+        }
+        #ai-chat-widget.open { height: 450px; }
+        #ai-chat-header {
+            padding: 10px 15px; background: #6366f1; cursor: pointer;
+            font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-between;
+        }
+        #ai-chat-body { display: none; flex-direction: column; height: calc(100% - 40px); }
+        #ai-chat-widget.open #ai-chat-body { display: flex; }
+        #ai-chat-messages {
+            flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .msg { padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; max-width: 85%; word-wrap: break-word; }
+        .msg-ai { background: rgba(255,255,255,0.1); align-self: flex-start; }
+        .msg-user { background: #6366f1; align-self: flex-end; }
+        #ai-chat-input-wrapper {
+            display: flex; padding: 10px; border-top: 1px solid rgba(255,255,255,0.1); gap: 10px;
+        }
+        #ai-chat-input-wrapper input {
+            flex: 1; padding: 8px; border-radius: 4px; border: none; outline: none;
+            background: rgba(255,255,255,0.1); color: white;
+        }
+        #ai-chat-input-wrapper button {
+            background: #6366f1; color: white; border: none; padding: 8px 12px;
+            border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        #ai-chat-input-wrapper button:hover { background: #4f46e5; }
+    </style>
+</head>
+<body>
+    <!-- Neauraforge Toolbar -->
+    <div class="neura-preview-toolbar">
+        <div style="display: flex; align-items: center;">
+            <strong style="color: #cbd5e1;">Editor Mode:</strong> &nbsp; {{ website.name }}
+            <div class="page-nav">
+                {% for page in website.pages %}
+                    <a href="{{ url_for('website_bp.edit_page', website_id=website.id, slug=page.slug) }}" 
+                       class="{% if page.id == current_page.id %}active{% endif %}">
+                       {{ page.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('auth.dashboard') }}">Exit Editor</a>
+            <button class="btn-save" onclick="saveAllSections()">Save All Changes</button>
+        </div>
+    </div>
+
+    <!-- Rendered Page Content -->
+    <div class="neura-preview-content">
+        {% for section in current_page.sections|sort(attribute='order') %}
+            <!-- Identify sections strictly via data-section-id -->
+            <section class="editable-section" data-section-id="{{ section.id }}">
+                <div contenteditable="true" class="section-code-container">
+                    {{ section.content|safe }}
+                </div>
+            </section>
+        {% else %}
+            <div class="flex items-center justify-center h-screen bg-gray-50 text-gray-500">
+                <p>No content generated for this page yet.</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <div id="toast">Changes saved successfully!</div>
+
+    <!-- Chatbot Widget -->
+    <div id="ai-chat-widget">
+        <div id="ai-chat-header" onclick="toggleChat()">
+            <span>✨ AI Assistant</span>
+            <span id="chat-toggle-icon">▲</span>
+        </div>
+        <div id="ai-chat-body">
+            <div id="ai-chat-messages">
+                <div class="msg msg-ai">Hello! I am your AI Website Assistant. Ask me anything about improving this site!</div>
+            </div>
+            <div id="ai-chat-input-wrapper">
+                <input type="text" id="ai-chat-input" placeholder="Ask AI..." onkeypress="handleChatEnter(event)">
+                <button onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleChat() {
+            const widget = document.getElementById('ai-chat-widget');
+            const icon = document.getElementById('chat-toggle-icon');
+            widget.classList.toggle('open');
+            icon.innerText = widget.classList.contains('open') ? '▼' : '▲';
+        }
+
+        function handleChatEnter(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('ai-chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            appendMessage(message, 'user');
+            
+            // Show typing indicator
+            const typingId = 'typing-' + Date.now();
+            appendMessage('...', 'ai', typingId);
+
+            // In Jinja, variables are interpolated as strings if not numeric.
+            // Using dataset attributes on a hidden element is safer, but inline requires quotes for string types if they were strings.
+            // IDs are ints here.
+            try {
+                const response = await fetch('/api/chat/website', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: message,
+                        user_id: parseInt("{{ session.get('user_id', 1) }}", 10),
+                        website_id: parseInt("{{ website.id }}", 10)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+                
+                if (data.reply) {
+                    appendMessage(data.reply, 'ai');
+                } else {
+                    appendMessage("Error: AI didn't respond correctly.", 'ai');
+                }
+            } catch (err) {
+                console.error(err);
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+                appendMessage("Failed to connect to AI server.", 'ai');
+            }
+        }
+
+        function appendMessage(text, sender, id=null) {
+            const msgs = document.getElementById('ai-chat-messages');
+            const div = document.createElement('div');
+            div.className = 'msg msg-' + sender;
+            if (id) div.id = id;
+            div.innerText = text;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        // --- Existing Editor Script ---
+        async function saveAllSections() {
+            const sections = document.querySelectorAll('.editable-section');
+            let promises = [];
+            
+            sections.forEach(section => {
+                const sectionId = section.getAttribute('data-section-id');
+                const contentContainer = section.querySelector('.section-code-container');
+                const newContent = contentContainer.innerHTML;
+                
+                promises.push(
+                    fetch(`/website/api/section/${sectionId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ content: newContent })
+                    })
+                );
+            });
+            
+            try {
+                await Promise.all(promises);
+                showToast("All sections saved successfully!");
+            } catch (error) {
+                console.error("Error saving sections:", error);
+                alert("An error occurred while saving your changes.");
+            }
+        }
+        
+        function showToast(msg) {
+            var x = document.getElementById("toast");
+            x.innerText = msg;
+            x.className = "show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+    </script>
+</body>
+</html>

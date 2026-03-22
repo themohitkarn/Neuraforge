@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 2rem auto; text-align: center;">
+    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem;">
+        <span class="text-gradient">Choose Your Plan</span>
+    </h1>
+    <p style="color: #94a3b8; margin-bottom: 2.5rem;">Unlock the full power of AI website generation</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <!-- FREE PLAN -->
+        <div class="glass-card" style="text-align: left; position: relative;">
+            <h3 style="margin-bottom: 0.5rem;">Free</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+                $0 <span style="font-size: 1rem; color: #64748b; font-weight: 400;">/forever</span>
+            </p>
+            <p style="color: #94a3b8; margin-bottom: 1.5rem;">Get started with AI website building</p>
+            <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-coins" style="color: #f59e0b; width: 20px;"></i> 50 tokens on signup
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-globe" style="color: #6366f1; width: 20px;"></i> 10 tokens per website
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-magic" style="color: #a78bfa; width: 20px;"></i> 3 tokens per AI regen
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-code" style="color: #10b981; width: 20px;"></i> HTML & Tailwind only
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-comment" style="color: #38bdf8; width: 20px;"></i> 1 token per AI chat
+                </li>
+            </ul>
+            {% if session.get('user_id') %}
+                <span class="btn-outline w-100" style="display: block; text-align: center; opacity: 0.6;">Current Plan</span>
+            {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn-outline w-100" style="display: block; text-align: center;">Get Started</a>
+            {% endif %}
+        </div>
+
+        <!-- PREMIUM PLAN -->
+        <div class="glass-card" style="text-align: left; position: relative; border-color: rgba(99,102,241,0.3); 
+             background: rgba(99,102,241,0.05);">
+            <div style="position: absolute; top: -12px; right: 16px; background: linear-gradient(135deg, #6366f1, #a78bfa); 
+                        padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: #fff;">
+                ⭐ RECOMMENDED
+            </div>
+            <h3 style="margin-bottom: 0.5rem; color: #a78bfa;">Premium</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+                $9 <span style="font-size: 1rem; color: #64748b; font-weight: 400;">/month</span>
+            </p>
+            <p style="color: #94a3b8; margin-bottom: 1.5rem;">Unlimited power for serious builders</p>
+            <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem;">
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-coins" style="color: #f59e0b; width: 20px;"></i> 500 tokens per month
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-globe" style="color: #6366f1; width: 20px;"></i> 5 tokens per website
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-magic" style="color: #a78bfa; width: 20px;"></i> 1 token per AI regen
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-code" style="color: #10b981; width: 20px;"></i> All frameworks (React, Vue, Next.js)
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-server" style="color: #f97316; width: 20px;"></i> Backend code generation
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-comment" style="color: #38bdf8; width: 20px;"></i> Unlimited AI chat
+                </li>
+                <li style="padding: 8px 0; color: #cbd5e1; font-size: 0.9rem;">
+                    <i class="fas fa-download" style="color: #14b8a6; width: 20px;"></i> Free exports
+                </li>
+            </ul>
+            <button class="btn-primary w-100" onclick="alert('Payment integration coming soon! Contact admin for manual upgrade.')">
+                Upgrade to Premium ⚡
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
