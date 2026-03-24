@@ -31,5 +31,5 @@ langchain-groq>=1.1.0
 
 pytest==8.1.1
 sentence-transformers==2.6.1
-# FAISS does not currently provide wheels for all Python versions (e.g. 3.13).
-faiss-cpu==1.8.0; python_version < "3.13"
+
+faiss-cpu==1.8.0; python_version
