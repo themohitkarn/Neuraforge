@@ -5,9 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# ============================================================
 # CLEAN JSON UTILITY
-# ============================================================
 
 def clean_json_output(raw_text):
     """
@@ -56,9 +54,7 @@ def clean_json_output(raw_text):
     return cleaned
 
 
-# ============================================================
 # GEMINI GENERATOR
-# ============================================================
 
 class GeminiGenerator:
     """Uses Google's Gemini API to generate unique website templates."""
@@ -163,9 +159,7 @@ ANTI-REPETITION ENFORCEMENT:
         return response.text
 
 
-# ============================================================
 # GROQ GENERATOR
-# ============================================================
 
 class GroqGenerator:
     
@@ -259,9 +253,7 @@ FAIL CONDITIONS (your output is REJECTED if):
         return self.llm.invoke_json(messages, temperature=temperature, max_tokens=8192)
 
 
-# ============================================================
 # AI ENGINE ROUTER
-# ============================================================
 
 class AIEngineRouter:
     """
@@ -322,9 +314,7 @@ class AIEngineRouter:
             )
 
 
-# ============================================================
 # LEGACY: LOCAL TEMPLATE GENERATOR (kept for fallback)
-# ============================================================
 
 class TemplateGenerator:
     """Local model generator — kept for offline fallback."""
@@ -380,9 +370,7 @@ class TemplateGenerator:
             return llm.invoke_json(messages, temperature=temperature, max_tokens=8192)
 
 
-# ============================================================
 # UTILITY
-# ============================================================
 
 def detect_and_setup(filename):
     ext = filename.split('.')[-1]
