@@ -29,6 +29,7 @@ instance/
 .idea/
 *.swp
 *.swo
+*.benchmarks/
 
 # OS
 .DS_Store
@@ -55,3 +56,6 @@ legacy_artifacts/
 # Node (if any)
 node_modules/
 package-lock.json
+
+# One timer scripts
+*make_prem.py
